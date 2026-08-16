@@ -9,6 +9,7 @@ namespace ForgottenTrail
         private Vector3 investigate;
         private bool investigating;
         private float forgetTimer;
+        private float health = 100f;
 
         private void OnEnable() => NoiseSystem.Emitted += OnNoise;
         private void OnDisable() => NoiseSystem.Emitted -= OnNoise;
@@ -24,6 +25,12 @@ namespace ForgottenTrail
             var flat = investigate - transform.position; flat.y = 0;
             if (flat.sqrMagnitude > 0.6f) transform.position += flat.normalized * speed * Time.deltaTime;
             transform.rotation = Quaternion.LookRotation(flat.sqrMagnitude > 0.01f ? flat : transform.forward);
+        }
+
+        public void ApplyDamage(float amount)
+        {
+            health -= amount;
+            if (health <= 0f) Destroy(gameObject);
         }
     }
 }

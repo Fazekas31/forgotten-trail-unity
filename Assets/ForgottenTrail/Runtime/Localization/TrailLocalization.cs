@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace ForgottenTrail
 {
@@ -6,7 +7,12 @@ namespace ForgottenTrail
     {
         public bool English { get; private set; }
         public void SetEnglish(bool value) => English = value;
-        public string Objective(string step) => English ? TrailContent.ObjectivesEn.GetValueOrDefault(step, step) : TrailContent.ObjectivesPt.GetValueOrDefault(step, step);
+        public string Objective(string step) => English ? Lookup(TrailContent.ObjectivesEn, step) : Lookup(TrailContent.ObjectivesPt, step);
+
+        private static string Lookup(IReadOnlyDictionary<string, string> table, string step)
+        {
+            return table.TryGetValue(step, out var value) ? value : step;
+        }
         public string Text(string pt, string en) => English ? en : pt;
         public string LabelObjective => Text("OBJETIVO", "OBJECTIVE");
         public string LabelInventory => Text("RECURSOS", "ITEMS");

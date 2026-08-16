@@ -25,7 +25,8 @@ namespace ForgottenTrail
         {
             if (Instance != null) { Destroy(gameObject); return; } Instance = this; DontDestroyOnLoad(gameObject);
             ResetModels(); UI = gameObject.AddComponent<TrailUI>(); Audio = gameObject.AddComponent<TrailAudioDirector>(); world = gameObject.AddComponent<TrailWorldBuilder>();
-            var playerObject = new GameObject("Levon"); playerObject.transform.SetParent(transform); Player = playerObject.AddComponent<TrailPlayerController>(); Player.Initialize();
+            gameObject.AddComponent<TrailVhsOverlay>();
+            var playerObject = new GameObject("Levon"); playerObject.transform.SetParent(transform); playerObject.AddComponent<CharacterController>(); Player = playerObject.AddComponent<TrailPlayerController>(); Player.Initialize();
             lanternLight = Player.PlayerCamera.gameObject.AddComponent<Light>(); lanternLight.type = LightType.Spot; lanternLight.range = 16f; lanternLight.spotAngle = 54f; lanternLight.intensity = 2.3f; lanternLight.color = new Color(1f,.59f,.25f); lanternLight.enabled = false;
         }
 
@@ -50,7 +51,7 @@ namespace ForgottenTrail
             if (target.kind == InteractionKind.Choice) { UI.ShowChoice(); return; }
             var eventId = target.eventId; var itemId = target.itemId; var targetTitle = target.title; var targetText = target.inspectionText;
             if (!Campaign.Report(eventId)) { UI.Toast(Localization.Text("O rastro ainda não leva até aqui.", "The trail does not lead here yet.")); return; }
-            if (!string.IsNullOrEmpty(itemId)) { Inventory.Add(itemId); if (itemId == "lantern") Lantern.Acquire(); }
+            if (!string.IsNullOrEmpty(itemId)) { Inventory.Add(itemId); if (itemId == "lantern") Lantern.Acquire(); if (itemId == "knife") Player.EquipWeapon("knife"); }
             Journal.RecordForStep(Campaign.CurrentStep); UI.ShowInspection(Localization.Text(targetTitle, targetTitle), Localization.Text(targetText, targetText)); Audio.PlayCue(itemId != null ? "evidence" : "creak"); SaveSnapshot();
         }
         public void ToggleLantern() { if (!Lantern.Available) { UI.Toast(Localization.Text("Ainda não tenho um lampião.", "I do not have a lantern yet.")); return; } Lantern.Toggle(); lanternLight.enabled = Lantern.Lit; Audio.PlayCue("creak"); }

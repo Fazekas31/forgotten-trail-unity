@@ -13,7 +13,8 @@ namespace ForgottenTrail
             {
                 var temp = path + ".tmp";
                 File.WriteAllText(temp, JsonUtility.ToJson(snapshot, true));
-                File.Replace(temp, path, null, true);
+                if (File.Exists(path)) File.Replace(temp, path, null, true);
+                else File.Move(temp, path);
                 return true;
             }
             catch { return false; }

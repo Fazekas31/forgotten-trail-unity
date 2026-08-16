@@ -13,13 +13,15 @@ namespace ForgottenTrail
         private Transform root;
         private readonly List<GameObject> spawned = new();
         private Material ground, wood, darkWood, brick, rust, moon, blood, gold;
+        private GameObject authoredEnvironment;
 
         public void Build(TrailAct act, string step)
         {
             Clear(); ConfigureAtmosphere(act); CreateMaterials(); root = new GameObject("AshCreek_Act_" + (int)act).transform;
             SpawnPoint = act switch { TrailAct.Arrival => new Vector3(0, 0.05f, -8), TrailAct.Barn => new Vector3(0, 0.05f, -7), TrailAct.Mine => new Vector3(0, 0.05f, -6), _ => new Vector3(0, 0.05f, -5) };
             CreateBox("Ground", new Vector3(0, -0.18f, 8), new Vector3(44, .3f, 48), ground, true);
-            switch (act) { case TrailAct.Arrival: BuildArrival(); break; case TrailAct.Barn: BuildBarn(); break; case TrailAct.Mine: BuildMine(); break; case TrailAct.Final: BuildFinal(); break; }
+            if (act == TrailAct.Arrival && AttachAuthoredEnvironment()) BuildArrivalGameplayMarkers();
+            else switch (act) { case TrailAct.Arrival: BuildArrival(); break; case TrailAct.Barn: BuildBarn(); break; case TrailAct.Mine: BuildMine(); break; case TrailAct.Final: BuildFinal(); break; }
             if (events.TryGetValue(step, out var eventId)) CreateTarget(step, eventId, TargetTitle(step), TargetText(step), TargetItem(step));
             else if (step == "final_choice") CreateChoiceTarget();
             if (act is TrailAct.Barn or TrailAct.Mine) { CreateInfected(new Vector3(4, .75f, 12)); CreateInfected(new Vector3(-5, .75f, 22)); }
@@ -29,6 +31,22 @@ namespace ForgottenTrail
         {
             CreateBox("Saloon", new Vector3(-8, 2.3f, 12), new Vector3(9, 4.6f, 8), wood, false); CreateBox("Church", new Vector3(8, 2.8f, 25), new Vector3(8, 5.6f, 9), brick, false); CreateBox("Station", new Vector3(0, 2.3f, 34), new Vector3(8, 4.6f, 7), darkWood, false);
             CreateBox("Road", new Vector3(0, .03f, 13), new Vector3(4, .08f, 42), new Material(ground) { color = new Color(.28f,.18f,.11f) }, false); CreateTownDetails();
+        }
+        private void BuildArrivalGameplayMarkers()
+        {
+            CreateBox("ArrivalBoundary", new Vector3(0, -0.05f, 31), new Vector3(44, .1f, 1), new Material(ground) { color = new Color(.17f, .09f, .06f) }, false);
+        }
+        private bool AttachAuthoredEnvironment()
+        {
+            var prefab = Resources.Load<GameObject>("Environment/ForgottenTrail_MainEnvironment");
+            if (prefab == null) return false;
+            authoredEnvironment = Instantiate(prefab, root);
+            authoredEnvironment.name = "AshCreek_AuthoredEnvironment";
+            authoredEnvironment.transform.localPosition = Vector3.zero;
+            authoredEnvironment.transform.localRotation = Quaternion.identity;
+            authoredEnvironment.transform.localScale = Vector3.one;
+            spawned.Add(authoredEnvironment);
+            return true;
         }
         private void BuildBarn()
         {

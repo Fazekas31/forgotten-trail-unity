@@ -20,6 +20,14 @@ namespace ForgottenTrail
 
         private void Awake()
         {
+            wind ??= Resources.Load<AudioClip>("Audio/DesertWind");
+            footstepDirt ??= Resources.Load<AudioClip>("Audio/FootstepWood");
+            footstepWood ??= Resources.Load<AudioClip>("Audio/FootstepWood");
+            churchBell ??= Resources.Load<AudioClip>("Audio/ChurchBells");
+            heartbeat ??= Resources.Load<AudioClip>("Audio/HeartbeatFast");
+            creak ??= Resources.Load<AudioClip>("Audio/Creak");
+            evidence ??= Resources.Load<AudioClip>("Audio/Evidence");
+            impact ??= Resources.Load<AudioClip>("Audio/Impact");
             ambience = gameObject.AddComponent<AudioSource>(); ambience.loop = true; ambience.volume = 0.18f; ambience.spatialBlend = 0f;
             oneShot = gameObject.AddComponent<AudioSource>(); oneShot.spatialBlend = 0.1f;
             if (wind != null) { ambience.clip = wind; ambience.Play(); }
