@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,6 +15,7 @@ namespace ForgottenTrail
         private readonly List<GameObject> spawned = new();
         private Material ground, wood, darkWood, brick, rust, moon, blood, gold;
         private GameObject authoredEnvironment;
+        private Light moonlight;
 
         public void Build(TrailAct act, string step)
         {
@@ -45,8 +47,41 @@ namespace ForgottenTrail
             authoredEnvironment.transform.localPosition = Vector3.zero;
             authoredEnvironment.transform.localRotation = Quaternion.identity;
             authoredEnvironment.transform.localScale = Vector3.one;
+            NormalizeAuthoredMaterials();
+            StartCoroutine(NormalizeAuthoredMaterialsNextFrame());
             spawned.Add(authoredEnvironment);
             return true;
+        }
+        private IEnumerator NormalizeAuthoredMaterialsNextFrame()
+        {
+            yield return null;
+            NormalizeAuthoredMaterials();
+        }
+        private void NormalizeAuthoredMaterials()
+        {
+            var renderShader = Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit");
+            if (renderShader == null) return;
+            foreach (var renderer in authoredEnvironment.GetComponentsInChildren<Renderer>(true))
+            {
+                var source = renderer.sharedMaterial;
+                if (source == null || source.shader == renderShader) continue;
+                var material = new Material(renderShader) { name = source.name + "_Converted" };
+                var colorProperty = material.HasProperty("_BaseColor") ? "_BaseColor" : "_Color";
+                var textureProperty = material.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
+                var smoothnessProperty = material.HasProperty("_Smoothness") ? "_Smoothness" : "_Glossiness";
+                if (source.HasProperty("baseColorFactor") && material.HasProperty(colorProperty)) material.SetColor(colorProperty, source.GetColor("baseColorFactor"));
+                if (source.HasProperty("baseColorTexture") && material.HasProperty(textureProperty))
+                {
+                    var colorTexture = source.GetTexture("baseColorTexture");
+                    var originalTexture = colorTexture == null ? null : Resources.Load<Texture2D>("Art/Textures/Main File V1_1_" + colorTexture.name);
+                    material.SetTexture(textureProperty, originalTexture == null ? colorTexture : originalTexture);
+                }
+                if (source.HasProperty("metallicFactor") && material.HasProperty("_Metallic")) material.SetFloat("_Metallic", source.GetFloat("metallicFactor"));
+                if (source.HasProperty("roughnessFactor") && material.HasProperty(smoothnessProperty)) material.SetFloat(smoothnessProperty, 1f - source.GetFloat("roughnessFactor"));
+                if (source.HasProperty("normalTexture") && material.HasProperty("_BumpMap")) material.SetTexture("_BumpMap", source.GetTexture("normalTexture"));
+                if (source.HasProperty("normalTexture_scale") && material.HasProperty("_BumpScale")) material.SetFloat("_BumpScale", source.GetFloat("normalTexture_scale"));
+                renderer.sharedMaterial = material;
+            }
         }
         private void BuildBarn()
         {
@@ -82,8 +117,16 @@ namespace ForgottenTrail
         private string TargetText(string step) => step switch { "arrival" => "O homem ferido entrega o lampião. O cavalo se recusa a atravessar o portão.", "priest" => "Elias confirma que Layla foi levada com os feridos. O distintivo dele abre a próxima conversa.", "station_hale" => "Hale está vivo e trancou a si mesmo para não ferir ninguém.", "barn_layla" => "Layla está viva. A voz que chama do corredor usa as lembranças dela.", "mine_bell" => "A Campainha de Ventilação interrompe a influência do Imitador, mas acorda a mina.", "final_chamber" => "A água escura se move no fundo da câmara. Layla pede que você decida.", _ => "O cowboy observa os vestígios em silêncio." };
         private string TargetItem(string step) => step switch { "arrival" => "lantern", "priest" => "deputy_badge", "station_ledger" => "red_ledger", "station_key" => "barn_key", "barn_map" => "ventilation_map", "mine_bell" => "ventilation_bell", "knife" => "knife", _ => null };
         private void CreateMaterials() { ground = Material("Ground", new Color(.20f,.14f,.10f)); wood = Material("Wood", new Color(.23f,.12f,.055f)); darkWood = Material("DarkWood", new Color(.08f,.045f,.025f)); brick = Material("Brick", new Color(.22f,.075f,.045f)); rust = Material("Rust", new Color(.28f,.13f,.07f)); moon = Material("Moon", new Color(.18f,.24f,.28f)); blood = Material("Blood", new Color(.18f,.015f,.01f)); gold = Material("Gold", new Color(.55f,.34f,.12f)); }
-        private Material Material(string name, Color color) { var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"); var material = new Material(shader) { name = name, color = color }; material.SetFloat("_Smoothness", .12f); return material; }
-        private void ConfigureAtmosphere(TrailAct act) { RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 18f; RenderSettings.fogEndDistance = act == TrailAct.Arrival ? 58f : 42f; RenderSettings.fogColor = new Color(.025f,.018f,.016f); RenderSettings.ambientLight = new Color(.075f,.065f,.08f); RenderSettings.skybox = null; }
+        private Material Material(string name, Color color) { var shader = Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit"); var material = new Material(shader) { name = name, color = color }; if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", .12f); if (material.HasProperty("_Glossiness")) material.SetFloat("_Glossiness", .12f); return material; }
+        private void ConfigureAtmosphere(TrailAct act)
+        {
+            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 18f; RenderSettings.fogEndDistance = act == TrailAct.Arrival ? 58f : 42f; RenderSettings.fogColor = new Color(.025f,.018f,.016f); RenderSettings.ambientLight = new Color(.18f,.12f,.09f); RenderSettings.skybox = null;
+            if (moonlight == null)
+            {
+                var lightObject = new GameObject("AshCreek_Moonlight"); lightObject.transform.SetParent(transform); moonlight = lightObject.AddComponent<Light>();
+            }
+            moonlight.type = LightType.Directional; moonlight.color = new Color(.72f,.48f,.32f); moonlight.intensity = 1.15f; moonlight.transform.rotation = Quaternion.Euler(45f,140f,0f); moonlight.enabled = true;
+        }
         private void Clear() { if (root != null) Object.Destroy(root.gameObject); foreach (var item in spawned) if (item != null) Object.Destroy(item); spawned.Clear(); }
     }
 }
