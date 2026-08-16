@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace ForgottenTrail.Tests
 {
@@ -91,6 +92,32 @@ namespace ForgottenTrail.Tests
             var shot = weapons.TryAttack(1);
             Assert.That(shot.Accepted, Is.True);
             Assert.That(shot.AmmoUsed, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void ArrivalLayoutFollowsTheSaloonInvestigationRoute()
+        {
+            var arrival = TrailArrivalLayout.SpawnFor("arrival", Vector3.zero);
+            var footprints = TrailArrivalLayout.SpawnFor("footprints", Vector3.zero);
+            var threshold = TrailArrivalLayout.SpawnFor("threshold", Vector3.zero);
+            var groundFloor = TrailArrivalLayout.SpawnFor("meal", Vector3.zero);
+            var upperFloor = TrailArrivalLayout.SpawnFor("diary", Vector3.zero);
+
+            Assert.That(arrival.z, Is.LessThan(footprints.z));
+            Assert.That(footprints.z, Is.LessThan(threshold.z));
+            Assert.That(TrailArrivalLayout.IsSaloonStep("meal"), Is.True);
+            Assert.That(TrailArrivalLayout.IsSaloonStep("diary"), Is.True);
+            Assert.That(groundFloor.y, Is.LessThan(upperFloor.y));
+            Assert.That(TrailArrivalLayout.TargetFor("knife", Vector3.zero).x, Is.EqualTo(-6.35f).Within(.01f));
+        }
+
+        [Test]
+        public void ArrivalLayoutConnectsChurchAndStationBeats()
+        {
+            Assert.That(TrailArrivalLayout.IsChurchStep("priest"), Is.True);
+            Assert.That(TrailArrivalLayout.IsStationStep("station_ledger"), Is.True);
+            Assert.That(TrailArrivalLayout.SpawnFor("enter_church", Vector3.zero).z, Is.LessThan(TrailArrivalLayout.SpawnFor("station", Vector3.zero).z));
+            Assert.That(TrailArrivalLayout.TargetFor("station_ledger", Vector3.zero).y, Is.GreaterThan(3.5f));
         }
     }
 }

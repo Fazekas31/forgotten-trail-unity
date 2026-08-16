@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,17 +13,19 @@ namespace ForgottenTrail
         private Transform root;
         private readonly List<GameObject> spawned = new();
         private Material ground, road, wood, darkWood, brick, rust, moon, blood, gold, foliage, trunk, stone;
-        private GameObject authoredEnvironment;
         private Light moonlight;
 
         public void Build(TrailAct act, string step)
         {
             Clear(); ConfigureAtmosphere(act); CreateMaterials(); root = new GameObject("AshCreek_Act_" + (int)act).transform;
             SpawnPoint = act switch { TrailAct.Arrival => new Vector3(0, 0.05f, -8), TrailAct.Barn => new Vector3(0, 0.05f, -7), TrailAct.Mine => new Vector3(0, 0.05f, -6), _ => new Vector3(0, 0.05f, -5) };
-            CreateBox("Ground", new Vector3(0, -0.18f, 8), new Vector3(44, .3f, 48), ground, true);
-            if (act == TrailAct.Arrival && AttachAuthoredEnvironment()) BuildArrivalGameplayMarkers();
-            else switch (act) { case TrailAct.Arrival: BuildArrival(); break; case TrailAct.Barn: BuildBarn(); break; case TrailAct.Mine: BuildMine(); break; case TrailAct.Final: BuildFinal(); break; }
-            if (act == TrailAct.Arrival) BuildArrivalScenery();
+            CreateBox("Ground", new Vector3(0, -0.18f, 14), new Vector3(44, .3f, 72), ground, true);
+            if (act == TrailAct.Arrival)
+            {
+                SpawnPoint = TrailArrivalLayout.SpawnFor(step, SpawnPoint);
+                new TrailArrivalBuilder(root, ground, road, wood, darkWood, brick, rust, gold, foliage, trunk, stone, blood).Build(step);
+            }
+            else switch (act) { case TrailAct.Barn: BuildBarn(); break; case TrailAct.Mine: BuildMine(); break; case TrailAct.Final: BuildFinal(); break; }
             if (events.TryGetValue(step, out var eventId)) CreateTarget(step, eventId, TargetTitle(step), TargetText(step), TargetItem(step));
             else if (step == "final_choice") CreateChoiceTarget();
             if (act is TrailAct.Barn or TrailAct.Mine) { CreateInfected(new Vector3(4, .75f, 12)); CreateInfected(new Vector3(-5, .75f, 22)); }
@@ -148,51 +149,6 @@ namespace ForgottenTrail
             if (collider != null) Object.Destroy(collider);
             return part;
         }
-        private bool AttachAuthoredEnvironment()
-        {
-            var prefab = Resources.Load<GameObject>("Environment/ForgottenTrail_MainEnvironment");
-            if (prefab == null) return false;
-            authoredEnvironment = Instantiate(prefab, root);
-            authoredEnvironment.name = "AshCreek_AuthoredEnvironment";
-            authoredEnvironment.transform.localPosition = Vector3.zero;
-            authoredEnvironment.transform.localRotation = Quaternion.identity;
-            authoredEnvironment.transform.localScale = Vector3.one;
-            NormalizeAuthoredMaterials();
-            StartCoroutine(NormalizeAuthoredMaterialsNextFrame());
-            spawned.Add(authoredEnvironment);
-            return true;
-        }
-        private IEnumerator NormalizeAuthoredMaterialsNextFrame()
-        {
-            yield return null;
-            NormalizeAuthoredMaterials();
-        }
-        private void NormalizeAuthoredMaterials()
-        {
-            var renderShader = Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit");
-            if (renderShader == null) return;
-            foreach (var renderer in authoredEnvironment.GetComponentsInChildren<Renderer>(true))
-            {
-                var source = renderer.sharedMaterial;
-                if (source == null || source.shader == renderShader) continue;
-                var material = new Material(renderShader) { name = source.name + "_Converted" };
-                var colorProperty = material.HasProperty("_BaseColor") ? "_BaseColor" : "_Color";
-                var textureProperty = material.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
-                var smoothnessProperty = material.HasProperty("_Smoothness") ? "_Smoothness" : "_Glossiness";
-                if (source.HasProperty("baseColorFactor") && material.HasProperty(colorProperty)) material.SetColor(colorProperty, source.GetColor("baseColorFactor"));
-                if (source.HasProperty("baseColorTexture") && material.HasProperty(textureProperty))
-                {
-                    var colorTexture = source.GetTexture("baseColorTexture");
-                    var originalTexture = colorTexture == null ? null : Resources.Load<Texture2D>("Art/Textures/Main File V1_1_" + colorTexture.name);
-                    material.SetTexture(textureProperty, originalTexture == null ? colorTexture : originalTexture);
-                }
-                if (source.HasProperty("metallicFactor") && material.HasProperty("_Metallic")) material.SetFloat("_Metallic", source.GetFloat("metallicFactor"));
-                if (source.HasProperty("roughnessFactor") && material.HasProperty(smoothnessProperty)) material.SetFloat(smoothnessProperty, 1f - source.GetFloat("roughnessFactor"));
-                if (source.HasProperty("normalTexture") && material.HasProperty("_BumpMap")) material.SetTexture("_BumpMap", source.GetTexture("normalTexture"));
-                if (source.HasProperty("normalTexture_scale") && material.HasProperty("_BumpScale")) material.SetFloat("_BumpScale", source.GetFloat("normalTexture_scale"));
-                renderer.sharedMaterial = material;
-            }
-        }
         private void BuildBarn()
         {
             CreateBox("SurvivorBarn", new Vector3(0, 3.2f, 18), new Vector3(14, 6.4f, 13), wood, false); CreateBox("BarnDoor", new Vector3(0, 2.5f, 11.4f), new Vector3(6, 5, .25f), darkWood, false);
@@ -219,12 +175,40 @@ namespace ForgottenTrail
         private GameObject CreateBox(string name, Vector3 position, Vector3 scale, Material material, bool collision) { var box = GameObject.CreatePrimitive(PrimitiveType.Cube); box.name = name; box.transform.SetParent(root); box.transform.localPosition = position; box.transform.localScale = scale; box.GetComponent<Renderer>().material = material; if (!collision) Object.Destroy(box.GetComponent<BoxCollider>()); spawned.Add(box); return box; }
         private void CreateTarget(string step, string eventId, string title, string text, string item)
         {
-            var target = GameObject.CreatePrimitive(PrimitiveType.Cube); target.name = "Investigation_" + step; target.transform.SetParent(root); target.transform.localPosition = new Vector3(0, .55f, 4.5f); target.transform.localScale = new Vector3(.5f, .5f, .5f); target.GetComponent<Renderer>().material = new Material(gold) { color = new Color(.72f,.48f,.18f) }; var light = target.AddComponent<Light>(); light.type = LightType.Point; light.range = 3.3f; light.intensity = .7f; light.color = new Color(1f,.55f,.22f); var interactable = target.AddComponent<TrailInteractable>(); interactable.eventId = eventId; interactable.title = title; interactable.inspectionText = text; interactable.itemId = item; interactable.kind = item == null ? InteractionKind.Inspect : InteractionKind.Collect; interactable.prompt = item == null ? "Examinar" : "Pegar"; spawned.Add(target);
+            var target = GameObject.CreatePrimitive(PrimitiveType.Cube); target.name = "Investigation_" + step; target.transform.SetParent(root); target.transform.localPosition = TrailArrivalLayout.TargetFor(step, new Vector3(0, .55f, 4.5f)); target.transform.localScale = new Vector3(.5f, .5f, .5f); target.GetComponent<Renderer>().enabled = false; var light = target.AddComponent<Light>(); light.type = LightType.Point; light.range = 1.2f; light.intensity = .12f; light.color = new Color(1f,.55f,.22f); light.enabled = false; var interactable = target.AddComponent<TrailInteractable>(); interactable.eventId = eventId; interactable.title = title; interactable.inspectionText = text; interactable.itemId = item; interactable.kind = item == null ? InteractionKind.Inspect : InteractionKind.Collect; interactable.prompt = item == null ? "Examinar" : "Pegar"; spawned.Add(target);
         }
         private void CreateInfected(Vector3 position) { var infected = GameObject.CreatePrimitive(PrimitiveType.Capsule); infected.name = "Infected"; infected.transform.SetParent(root); infected.transform.localPosition = position; infected.transform.localScale = new Vector3(.55f, 1.1f, .55f); infected.GetComponent<Renderer>().material = new Material(brick) { color = new Color(.18f,.06f,.05f) }; infected.AddComponent<InfectedAI>(); spawned.Add(infected); }
         private void CreateChoiceTarget() { var target = GameObject.CreatePrimitive(PrimitiveType.Cube); target.name = "FinalChoice"; target.transform.SetParent(root); target.transform.localPosition = new Vector3(0, .6f, 31); target.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f); target.GetComponent<Renderer>().material = new Material(gold) { color = new Color(.85f,.66f,.18f) }; var interactable = target.AddComponent<TrailInteractable>(); interactable.kind = InteractionKind.Choice; interactable.prompt = "Decidir"; interactable.title = "A decisão"; interactable.inspectionText = "A Campainha está pronta. O destino de Layla depende de uma escolha."; spawned.Add(target); }
-        private string TargetTitle(string step) => step switch { "priest" => "PADRE ELIAS", "station_hale" => "XERIFE HALE", "barn_layla" or "mine_reunion" => "LAYLA", "final_chamber" => "A CÂMARA", _ => "PISTA" };
-        private string TargetText(string step) => step switch { "arrival" => "O homem ferido entrega o lampião. O cavalo se recusa a atravessar o portão.", "priest" => "Elias confirma que Layla foi levada com os feridos. O distintivo dele abre a próxima conversa.", "station_hale" => "Hale está vivo e trancou a si mesmo para não ferir ninguém.", "barn_layla" => "Layla está viva. A voz que chama do corredor usa as lembranças dela.", "mine_bell" => "A Campainha de Ventilação interrompe a influência do Imitador, mas acorda a mina.", "final_chamber" => "A água escura se move no fundo da câmara. Layla pede que você decida.", _ => "O cowboy observa os vestígios em silêncio." };
+        private string TargetTitle(string step) => step switch { "arrival" => "O HOMEM FERIDO", "priest" => "PADRE ELIAS", "station_hale" => "XERIFE HALE", "station_ledger" => "REGISTRO VERMELHO", "barn_layla" or "mine_reunion" => "LAYLA", "final_chamber" => "A CÂMARA", _ => "PISTA" };
+        private string TargetText(string step) => step switch
+        {
+            "arrival" => "Encontrei um homem ferido na entrada de Ash Creek. Ele me entregou seu lampião e disse que alguma coisa na cidade escuta tudo. Não sei o que aconteceu aqui, mas não posso voltar sem descobrir se Layla ainda está viva.",
+            "footprints" => "Pegadas de garimpeiros. Algumas são recentes. Eles foram em direção à rua principal.",
+            "threshold" => "As pegadas terminam diante do saloon. A porta dupla está entreaberta e há sinais de movimentação lá dentro.",
+            "enter_saloon" => "O salão está abandonado, mas a cozinha e o andar superior ainda guardam sinais de quem saiu às pressas.",
+            "meal" => "Isso vem do andar de cima. Parece alguém gemendo… mas não soa humano.",
+            "broken_door" => "A passagem está destruída. Ainda consigo subir, mas não sei o que está me esperando lá em cima.",
+            "diary" => "As pessoas do saloon sabiam que alguma coisa estava observando a construção. Elas evitavam fazer barulho, principalmente durante a noite.",
+            "message" => "Não façam barulho. Eles não enxergam como nós, mas escutam tudo. Os sobreviventes foram levados para o celeiro.",
+            "window" => "Há marcas do lado de fora. Aquilo estava tentando olhar para dentro.",
+            "downstairs_noise" => "Alguma coisa quebrou no andar de baixo.",
+            "knife" => "Não vai me proteger de tudo, mas é melhor do que estar desarmado.",
+            "exit_saloon" => "O saloon estava vazio, mas eu não estava sozinho. Algo me observou pela janela e outra coisa passou pelo andar de baixo.",
+            "church_approach" => "Estas marcas saem da igreja. Não há nenhuma seguindo para dentro.",
+            "enter_church" => "A igreja está silenciosa, iluminada por velas. Atrás do altar, um homem ferido segura um castiçal.",
+            "church_interior" => "Velas acesas, fotografias de desaparecidos e uma Bíblia aberta. Há murmúrios vindo das paredes.",
+            "priest" => "Os garimpeiros trouxeram alguma coisa da mina. Primeiro vieram as febres. Depois, as vozes. Layla ajudou a cuidar dos doentes e foi levada para o celeiro.",
+            "station" => "A mina e o celeiro. Alguém marcou os dois lugares no mapa de Ash Creek.",
+            "station_ledger" => "LAYLA — transferida para o celeiro. Condição: consciente. Possível exposição. Pediu acesso aos registros da mina.",
+            "station_hale" => "Hale está vivo, febril e paranoico. Ele afirma que o padre Elias morreu há três dias.",
+            "station_key" => "Eu tranquei o celeiro para impedir que alguma coisa saísse. Não para impedir que entrassem.",
+            "leave_station" => "A criatura imita vozes. Se eu ouvir alguém conhecido, não posso confiar no som.",
+            "return_church" => "O padre Elias estava morto antes de eu chegar a Ash Creek. Ainda assim, conversei com ele.",
+            "barn_layla" => "Layla está viva. A voz que chama do corredor usa as lembranças dela.",
+            "mine_bell" => "A Campainha de Ventilação interrompe a influência do Imitador, mas acorda a mina.",
+            "final_chamber" => "A água escura se move no fundo da câmara. Layla pede que você decida.",
+            _ => "O cowboy observa os vestígios em silêncio."
+        };
         private string TargetItem(string step) => step switch { "arrival" => "lantern", "priest" => "deputy_badge", "station_ledger" => "red_ledger", "station_key" => "barn_key", "barn_map" => "ventilation_map", "mine_bell" => "ventilation_bell", "knife" => "knife", _ => null };
         private void CreateMaterials()
         {
@@ -258,18 +242,28 @@ namespace ForgottenTrail
                     material.SetTextureScale(textureProperty, textureScale);
                 }
             }
+            var normalResource = textureResource?.Replace("_Color_Orange", "_NormalGL").Replace("_Color", "_NormalGL");
+            var normal = string.IsNullOrEmpty(normalResource) ? null : Resources.Load<Texture2D>(normalResource);
+            if (normal != null && material.HasProperty("_BumpMap"))
+            {
+                material.SetTexture("_BumpMap", normal);
+                if (material.HasProperty("_BumpScale")) material.SetFloat("_BumpScale", .55f);
+            }
+            var roughResource = textureResource?.Replace("_Color_Orange", "_Roughness").Replace("_Color", "_Metalness");
+            var roughness = string.IsNullOrEmpty(roughResource) ? null : Resources.Load<Texture2D>(roughResource);
+            if (roughness != null && material.HasProperty("_MetallicGlossMap")) material.SetTexture("_MetallicGlossMap", roughness);
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", .12f);
             if (material.HasProperty("_Glossiness")) material.SetFloat("_Glossiness", .12f);
             return material;
         }
         private void ConfigureAtmosphere(TrailAct act)
         {
-            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 18f; RenderSettings.fogEndDistance = act == TrailAct.Arrival ? 58f : 42f; RenderSettings.fogColor = new Color(.025f,.018f,.016f); RenderSettings.ambientLight = new Color(.34f,.23f,.18f); RenderSettings.skybox = null;
+            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 18f; RenderSettings.fogEndDistance = act == TrailAct.Arrival ? 58f : 42f; RenderSettings.fogColor = new Color(.025f,.018f,.016f); RenderSettings.ambientLight = new Color(.46f,.32f,.25f); RenderSettings.skybox = null;
             if (moonlight == null)
             {
                 var lightObject = new GameObject("AshCreek_Moonlight"); lightObject.transform.SetParent(transform); moonlight = lightObject.AddComponent<Light>();
             }
-            moonlight.type = LightType.Directional; moonlight.color = new Color(.62f,.68f,.82f); moonlight.intensity = 1.15f; moonlight.shadowStrength = .68f; moonlight.shadows = LightShadows.Soft; moonlight.transform.rotation = Quaternion.Euler(48f,40f,0f); moonlight.enabled = true;
+            moonlight.type = LightType.Directional; moonlight.color = new Color(.62f,.68f,.82f); moonlight.intensity = 1.35f; moonlight.shadowStrength = .62f; moonlight.shadows = LightShadows.Soft; moonlight.transform.rotation = Quaternion.Euler(48f,40f,0f); moonlight.enabled = true;
         }
         private void Clear() { if (root != null) Object.Destroy(root.gameObject); foreach (var item in spawned) if (item != null) Object.Destroy(item); spawned.Clear(); }
     }
