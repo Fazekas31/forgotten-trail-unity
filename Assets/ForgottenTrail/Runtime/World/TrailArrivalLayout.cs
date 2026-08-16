@@ -9,6 +9,8 @@ namespace ForgottenTrail
     /// </summary>
     public static class TrailArrivalLayout
     {
+        public const float GroundAnchorY = .05f;
+
         private static readonly Dictionary<string, Vector3> SpawnPoints = new()
         {
             ["arrival"] = new Vector3(0f, .05f, -16f),
@@ -68,6 +70,9 @@ namespace ForgottenTrail
 
         public static Vector3 TargetFor(string step, Vector3 fallback)
             => TargetPoints.TryGetValue(step, out var point) ? point : fallback;
+
+        public static Vector3 GroundAnchor(Vector3 reference)
+            => new Vector3(reference.x, GroundAnchorY, reference.z);
 
         public static bool IsSaloonStep(string step)
             => step is "enter_saloon" or "meal" or "broken_door" or "diary" or "message" or "window" or "downstairs_noise" or "knife" or "exit_saloon";

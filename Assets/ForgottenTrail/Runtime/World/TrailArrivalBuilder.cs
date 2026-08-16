@@ -55,6 +55,11 @@ namespace ForgottenTrail
             leather = Tint(darkWood, "Leather", new Color(.16f, .055f, .025f));
             candle = Tint(gold, "CandleWax", new Color(.85f, .62f, .32f));
             black = Tint(darkWood, "Silhouette", new Color(.006f, .004f, .004f));
+            if (glass.HasProperty("_EmissionColor"))
+            {
+                glass.EnableKeyword("_EMISSION");
+                glass.SetColor("_EmissionColor", new Color(.18f, .035f, .008f));
+            }
         }
 
         public void Build(string step)
@@ -167,7 +172,7 @@ namespace ForgottenTrail
             Box("SaloonUpperFrontMid", new Vector3(-7.6f, 4.85f, front), new Vector3(1.9f, 3.0f, .28f), darkWood);
             Box("SaloonUpperFrontRight", new Vector3(-3.1f, 4.85f, front), new Vector3(2.0f, 3.0f, .28f), darkWood);
 
-            BuildRoof("SaloonRoof", new Vector3(-7.6f, 7.15f, 11.75f), width + 1.0f, depth + .9f, 31f);
+            BuildRoof("SaloonRoof", new Vector3(-7.6f, 8.03f, 11.75f), width + 1.0f, depth + .9f, 31f);
             BuildPorch(new Vector3(-7.6f, .12f, 6.25f), width + .8f, 1.6f);
             BuildDoubleDoor(new Vector3(-6.1f, 1.25f, 6.82f));
             Window(new Vector3(-10.8f, 1.72f, 6.78f), 1.45f, 1.45f, false, glass);
@@ -320,12 +325,12 @@ namespace ForgottenTrail
             Box("ChurchFrontLeft", new Vector3(4.55f, 3.0f, front), new Vector3(3.5f, 5.9f, .28f), plaster);
             Box("ChurchFrontRight", new Vector3(9.45f, 3.0f, front), new Vector3(3.5f, 5.9f, .28f), plaster);
             Box("ChurchFrontLintel", new Vector3(centerX, 5.6f, front), new Vector3(2.0f, .52f, .32f), trim);
-            BuildRoof("ChurchRoof", new Vector3(centerX, 7.0f, 27.5f), 9.4f, 15.3f, 28f);
+            BuildRoof("ChurchRoof", new Vector3(centerX, 7.27f, 27.5f), 9.4f, 15.3f, 28f);
             BuildDoubleDoor(new Vector3(centerX, 1.35f, 20.3f));
             Window(new Vector3(4.0f, 3.35f, 20.3f), 1.25f, 2.2f, false, glass);
             Window(new Vector3(10.0f, 3.35f, 20.3f), 1.25f, 2.2f, false, glass);
             Box("ChurchTower", new Vector3(7.0f, 6.3f, 19.7f), new Vector3(3.2f, 7.2f, 3.2f), brick);
-            BuildRoof("ChurchTowerRoof", new Vector3(7.0f, 10.4f, 19.7f), 3.7f, 3.7f, 35f);
+            BuildRoof("ChurchTowerRoof", new Vector3(7.0f, 10.75f, 19.7f), 3.7f, 3.7f, 35f);
             Text("✝", new Vector3(7.0f, 8.0f, 17.95f), 58, new Color(.66f, .45f, .25f), Quaternion.Euler(0f, 180f, 0f));
             BuildChurchInterior(step);
         }
@@ -372,7 +377,7 @@ namespace ForgottenTrail
             Box("StationUpperLeft", new Vector3(left, 4.8f, 36.25f), new Vector3(.3f, 3.0f, 10.7f), darkWood);
             Box("StationUpperRight", new Vector3(right, 4.8f, 36.25f), new Vector3(.3f, 3.0f, 10.7f), darkWood);
             Box("StationUpperBack", new Vector3(0f, 4.8f, back), new Vector3(10.4f, 3.0f, .3f), darkWood);
-            BuildRoof("StationRoof", new Vector3(0f, 7.05f, 36.25f), 11.4f, 11.7f, 29f);
+            BuildRoof("StationRoof", new Vector3(0f, 7.94f, 36.25f), 11.4f, 11.7f, 29f);
             BuildDoubleDoor(new Vector3(.2f, 1.25f, 30.8f));
             Window(new Vector3(-3.8f, 1.7f, 30.8f), 1.35f, 1.5f, false, glass);
             Window(new Vector3(3.8f, 1.7f, 30.8f), 1.35f, 1.5f, false, glass);
@@ -458,7 +463,7 @@ namespace ForgottenTrail
             Box("WellPostLeft", position + new Vector3(-1.18f, 2.2f, 0f), new Vector3(.22f, 2.7f, .22f), darkWood, false);
             Box("WellPostRight", position + new Vector3(1.18f, 2.2f, 0f), new Vector3(.22f, 2.7f, .22f), darkWood, false);
             Box("WellRoofBeam", position + new Vector3(0f, 3.4f, 0f), new Vector3(3.0f, .18f, .25f), trim, false);
-            BuildRoof("WellRoof", position + new Vector3(0f, 3.65f, 0f), 3.1f, 2.0f, 30f);
+            BuildRoof("WellRoof", position + new Vector3(0f, 4.5f, 0f), 3.1f, 2.0f, 30f);
         }
 
         private void BuildWagon(Vector3 position, float yaw)
@@ -488,25 +493,67 @@ namespace ForgottenTrail
 
         private void FrontierShell(string name, Vector3 center, float width, float height, Material wall, Material roofMaterial, bool windows)
         {
-            Box(name + "Floor", center + new Vector3(0f, -.08f, 0f), new Vector3(width, .14f, 5.6f), wall, false);
-            Box(name + "Back", center + new Vector3(0f, height / 2f, 2.8f), new Vector3(width, height, .25f), wall);
-            Box(name + "Left", center + new Vector3(-width / 2f, height / 2f, 0f), new Vector3(.25f, height, 5.6f), wall);
-            Box(name + "Right", center + new Vector3(width / 2f, height / 2f, 0f), new Vector3(.25f, height, 5.6f), wall);
-            Box(name + "Front", center + new Vector3(0f, height / 2f, -2.8f), new Vector3(width, height, .25f), wall);
-            BuildRoof(name + "Roof", center + new Vector3(0f, height + 1.0f, 0f), width + .8f, 6.3f, 27f, roofMaterial);
+            // The caller's Y is a design reference, not an elevation. Using it as the
+            // building origin made the entire backdrop float 2-3 metres above the road.
+            var basePosition = TrailArrivalLayout.GroundAnchor(center);
+            const float foundationHeight = .28f;
+            const float floorHeight = .14f;
+            const float wallBottom = .28f;
+            const float depth = 5.6f;
+
+            Box(name + "Foundation", basePosition + new Vector3(0f, foundationHeight / 2f, 0f),
+                new Vector3(width + .34f, foundationHeight, depth + .34f), stone, false);
+            Box(name + "Floor", basePosition + new Vector3(0f, wallBottom + floorHeight / 2f, 0f),
+                new Vector3(width, floorHeight, depth), wall, false);
+            var wallCenter = basePosition + new Vector3(0f, wallBottom + height / 2f, 0f);
+            Box(name + "Back", wallCenter + new Vector3(0f, 0f, depth / 2f), new Vector3(width, height, .25f), wall);
+            Box(name + "Left", wallCenter + new Vector3(-width / 2f, 0f, 0f), new Vector3(.25f, height, depth), wall);
+            Box(name + "Right", wallCenter + new Vector3(width / 2f, 0f, 0f), new Vector3(.25f, height, depth), wall);
+            Box(name + "Front", wallCenter + new Vector3(0f, 0f, -depth / 2f), new Vector3(width, height, .25f), wall);
+
+            // A continuous fascia and a real gable roof make the silhouettes read as
+            // buildings instead of disconnected floating primitives.
+            Box(name + "FrontFascia", basePosition + new Vector3(0f, wallBottom + height - .16f, -depth / 2f - .04f),
+                new Vector3(width + .12f, .18f, .28f), trim, false);
+            Box(name + "Door", basePosition + new Vector3(0f, 1.35f, -depth / 2f - .16f),
+                new Vector3(1.15f, 2.25f, .12f), darkWood, false);
+            Box(name + "DoorStep", basePosition + new Vector3(0f, .18f, -depth / 2f - .42f),
+                new Vector3(1.55f, .18f, .68f), stone, false);
+            for (var i = -1; i <= 1; i++)
+                Box(name + "FrontStud" + i, basePosition + new Vector3(i * width * .31f, wallBottom + height / 2f, -depth / 2f - .16f),
+                    new Vector3(.12f, height - .18f, .12f), trim, false);
+
+            var roofRise = Mathf.Clamp((width + .8f) * .14f, .85f, 2.2f);
+            BuildRoof(name + "Roof", basePosition + new Vector3(0f, wallBottom + height + roofRise, 0f), width + .8f, 6.3f, 27f, roofMaterial);
             if (windows)
             {
-                Window(center + new Vector3(-width * .23f, 1.8f, -2.96f), 1.2f, 1.35f, false, glass);
-                Window(center + new Vector3(width * .23f, 1.8f, -2.96f), 1.2f, 1.35f, false, glass);
+                Window(basePosition + new Vector3(-width * .23f, wallBottom + 1.8f, -depth / 2f - .16f), 1.2f, 1.35f, false, glass);
+                Window(basePosition + new Vector3(width * .23f, wallBottom + 1.8f, -depth / 2f - .16f), 1.2f, 1.35f, false, glass);
+                CreatePracticalLight(name + "WindowLight", basePosition + new Vector3(0f, 2.0f, -depth / 2f + .2f), new Color(1f, .38f, .12f), 4.5f, .65f);
             }
         }
 
-        private void BuildRoof(string name, Vector3 center, float width, float depth, float angle, Material roofMaterial = null)
+        private void BuildRoof(string name, Vector3 center, float width, float depth, float _angle, Material roofMaterial = null)
         {
             roofMaterial ??= roof;
-            Part(name + "SlopeA", PrimitiveType.Cube, root, center + new Vector3(0f, .18f, -.82f), new Vector3(width, .24f, depth / 1.62f), roofMaterial, Quaternion.Euler(angle, 0f, 0f), false);
-            Part(name + "SlopeB", PrimitiveType.Cube, root, center + new Vector3(0f, .18f, .82f), new Vector3(width, .24f, depth / 1.62f), roofMaterial, Quaternion.Euler(-angle, 0f, 0f), false);
-            Box(name + "Ridge", center + new Vector3(0f, 1.45f, 0f), new Vector3(width, .18f, .25f), trim, false);
+            // Gable faces the street: the ridge runs along the building depth,
+            // matching the western silhouettes in the Ash Creek reference.
+            var halfWidth = width / 2f;
+            var rise = Mathf.Clamp(width * .14f, .85f, 2.2f);
+            var slopeLength = Mathf.Sqrt(halfWidth * halfWidth + rise * rise);
+            var slopeAngle = Mathf.Atan2(rise, halfWidth) * Mathf.Rad2Deg;
+            var slopeCenterY = center.y - rise / 2f;
+            var slopeCenterX = halfWidth / 2f;
+
+            Part(name + "SlopeA", PrimitiveType.Cube, root,
+                center + new Vector3(-slopeCenterX, slopeCenterY - center.y, 0f),
+                new Vector3(slopeLength, .24f, depth), roofMaterial, Quaternion.Euler(0f, 0f, slopeAngle), false);
+            Part(name + "SlopeB", PrimitiveType.Cube, root,
+                center + new Vector3(slopeCenterX, slopeCenterY - center.y, 0f),
+                new Vector3(slopeLength, .24f, depth), roofMaterial, Quaternion.Euler(0f, 0f, -slopeAngle), false);
+            Box(name + "Ridge", center, new Vector3(.25f, .18f, depth), trim, false);
+            Box(name + "EaveA", center + new Vector3(-halfWidth, -rise, 0f), new Vector3(.18f, .14f, depth), trim, false);
+            Box(name + "EaveB", center + new Vector3(halfWidth, -rise, 0f), new Vector3(.18f, .14f, depth), trim, false);
         }
 
         private void BuildPorch(Vector3 center, float width, float depth)

@@ -121,6 +121,18 @@ namespace ForgottenTrail.Tests
         }
 
         [Test]
+        public void BackdropBuildingsKeepTheirDesignReferenceButStartOnTheGround()
+        {
+            var reference = new Vector3(-16f, 2.8f, 7.5f);
+            var anchor = TrailArrivalLayout.GroundAnchor(reference);
+
+            Assert.That(anchor.x, Is.EqualTo(reference.x).Within(.001f));
+            Assert.That(anchor.z, Is.EqualTo(reference.z).Within(.001f));
+            Assert.That(anchor.y, Is.EqualTo(TrailArrivalLayout.GroundAnchorY).Within(.001f));
+            Assert.That(anchor.y, Is.LessThan(.2f));
+        }
+
+        [Test]
         public void StartingTheGameClosesTheMenuAndUnblocksInput()
         {
             var host = new GameObject("TrailUITest");
