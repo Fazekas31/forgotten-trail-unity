@@ -33,9 +33,12 @@ namespace ForgottenTrail
             initialized = true;
             controller = gameObject.GetComponent<CharacterController>();
             if (controller == null) controller = gameObject.AddComponent<CharacterController>();
-            controller.height = 1.72f; controller.radius = 0.32f; controller.center = new Vector3(0, 0.86f, 0); controller.slopeLimit = 50f;
-            var head = new GameObject("Head"); head.transform.SetParent(transform); head.transform.localPosition = new Vector3(0, 1.6f, 0);
-            PlayerCamera = head.AddComponent<Camera>(); PlayerCamera.fieldOfView = 72f; PlayerCamera.nearClipPlane = 0.03f; PlayerCamera.tag = "MainCamera"; head.AddComponent<AudioListener>();
+            controller.height = 1.72f; controller.radius = 0.32f; controller.center = new Vector3(0, 0.86f, 0);
+            controller.slopeLimit = 50f; controller.stepOffset = .28f; controller.skinWidth = .04f;
+            controller.minMoveDistance = .001f; controller.detectCollisions = true;
+            var head = new GameObject("Head"); head.transform.SetParent(transform); head.transform.localPosition = new Vector3(0, 1.58f, 0);
+            PlayerCamera = head.AddComponent<Camera>(); PlayerCamera.fieldOfView = 68f; PlayerCamera.nearClipPlane = 0.04f;
+            PlayerCamera.farClipPlane = 110f; PlayerCamera.tag = "MainCamera"; head.AddComponent<AudioListener>();
             stamina = staminaSeconds; Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false;
             weaponModel = new TrailWeaponModel();
         }

@@ -293,5 +293,22 @@ namespace ForgottenTrail.Tests
             Assert.That(ui.BlocksPlayer, Is.False);
             Object.DestroyImmediate(host);
         }
+
+        [Test]
+        public void FirstPersonControllerUsesStableCollisionAndCameraSettings()
+        {
+            var playerObject = new GameObject("TestFirstPersonPlayer");
+            var player = playerObject.AddComponent<TrailPlayerController>();
+            player.Initialize();
+
+            var controller = playerObject.GetComponent<CharacterController>();
+            Assert.That(controller, Is.Not.Null);
+            Assert.That(controller.stepOffset, Is.EqualTo(.28f).Within(.001f));
+            Assert.That(controller.skinWidth, Is.EqualTo(.04f).Within(.001f));
+            Assert.That(player.PlayerCamera.fieldOfView, Is.EqualTo(68f).Within(.01f));
+            Assert.That(player.PlayerCamera.nearClipPlane, Is.EqualTo(.04f).Within(.001f));
+
+            Object.DestroyImmediate(playerObject);
+        }
     }
 }

@@ -119,6 +119,28 @@ namespace ForgottenTrail
 
             TrailArrivalLayout.ApplyAuthoredArchitectureLayout(architecture.transform);
             RepairImportedArchitectureMaterials(architecture);
+            AddImportedArchitectureColliders(architecture);
+        }
+
+        private void AddImportedArchitectureColliders(GameObject architecture)
+        {
+            // The Blender buildings are visual assets, so their render meshes
+            // arrive without gameplay collision. Use the authored geometry for
+            // the exterior while leaving doors/windows/signs open for the
+            // first-person route and saloon investigation.
+            foreach (var filter in architecture.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (filter.sharedMesh == null || ShouldSkipArchitectureCollider(filter.gameObject.name)) continue;
+                if (filter.GetComponent<Collider>() != null) continue;
+                var collider = filter.gameObject.AddComponent<MeshCollider>();
+                collider.sharedMesh = filter.sharedMesh;
+            }
+        }
+
+        private static bool ShouldSkipArchitectureCollider(string name)
+        {
+            return name.Contains("Door") || name.Contains("Window") || name.Contains("Sign") ||
+                name.Contains("Lantern") || name.Contains("Light") || name.Contains("Text");
         }
 
         private void BuildImportedTrees()
