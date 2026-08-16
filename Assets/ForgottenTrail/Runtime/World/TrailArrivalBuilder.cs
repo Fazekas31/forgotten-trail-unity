@@ -71,6 +71,7 @@ namespace ForgottenTrail
             BuildGateAndApproach();
             BuildBackdropBuildings();
             BuildStreetFurniture();
+            BuildReferenceCompositionDressing();
             BuildSaloon(step);
             BuildChurch(step);
             BuildStation(step);
@@ -345,14 +346,47 @@ namespace ForgottenTrail
 
         private void BuildStreetFurniture()
         {
-            BuildWell(new Vector3(7.0f, .05f, 4.0f));
-            BuildWagon(new Vector3(4.2f, .04f, 12.0f), 12f);
+            // The well sits just off the road center, matching the reference
+            // composition without blocking the arrival path.
+            BuildWell(new Vector3(2.2f, .05f, 4.0f));
+            BuildWagon(new Vector3(4.6f, .04f, 12.0f), 12f);
             BuildWagon(new Vector3(-14.2f, .04f, 20.0f), -20f);
             BuildFence(new Vector3(-17f, .02f, 17f), 8f, 3);
             BuildFence(new Vector3(16f, .02f, 22f), 7f, 3);
             CreateCactus(new Vector3(-18f, .05f, -1f), 1.2f);
             CreateCactus(new Vector3(18f, .05f, 4f), .9f);
             CreateCactus(new Vector3(-18f, .05f, 34f), 1.35f);
+        }
+
+        private void BuildReferenceCompositionDressing()
+        {
+            // Keep the main avenue visually open while giving the town a lived-in
+            // western outline: a few loose boards, a signpost and a warm church
+            // glow are more useful here than another row of primitive buildings.
+            var signpost = Box("TownDirectionPost", new Vector3(-4.4f, 1.15f, 18.4f),
+                new Vector3(.16f, 2.3f, .16f), darkWood, false);
+            Box("TownDirectionBoard", signpost.transform.position + new Vector3(0f, .52f, -.02f),
+                new Vector3(1.65f, .28f, .10f), trim, false)
+                .transform.Rotate(0f, 0f, -5f);
+            Text("CHURCH", signpost.transform.position + new Vector3(0f, .54f, -.09f), 13,
+                new Color(.55f, .35f, .16f), Quaternion.Euler(0f, 180f, 0f));
+
+            var debris = new[]
+            {
+                new Vector3(-4.8f, .11f, 4.6f), new Vector3(5.5f, .10f, 7.0f),
+                new Vector3(-12.8f, .11f, 15.7f), new Vector3(11.8f, .10f, 18.8f),
+                new Vector3(-8.0f, .10f, 31.5f), new Vector3(8.5f, .10f, 34.2f)
+            };
+            for (var i = 0; i < debris.Length; i++)
+            {
+                var plank = Box("LooseStreetBoard", debris[i],
+                    new Vector3(.22f + (i % 2) * .14f, .07f, .85f + (i % 3) * .22f),
+                    i % 2 == 0 ? darkWood : wood, false);
+                plank.transform.Rotate(i * 17f, i * 29f, (i % 2 == 0 ? -8f : 11f));
+            }
+
+            CreatePracticalLight("ChurchExteriorGlow", new Vector3(7.0f, 2.5f, 20.7f),
+                new Color(1f, .42f, .14f), 7.5f, .8f);
         }
 
         private void BuildSaloon(string step)

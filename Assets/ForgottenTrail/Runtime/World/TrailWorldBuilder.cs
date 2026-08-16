@@ -260,19 +260,19 @@ namespace ForgottenTrail
         }
         private void ConfigureAtmosphere(TrailAct act)
         {
-            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 9f; RenderSettings.fogEndDistance = act == TrailAct.Arrival ? 52f : 42f; RenderSettings.fogColor = new Color(.006f,.012f,.026f); RenderSettings.ambientLight = new Color(.25f,.28f,.36f); RenderSettings.skybox = null;
+            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 12f; RenderSettings.fogEndDistance = act == TrailAct.Arrival ? 64f : 46f; RenderSettings.fogColor = new Color(.012f,.022f,.048f); RenderSettings.ambientLight = new Color(.34f,.39f,.52f); RenderSettings.reflectionIntensity = .45f; RenderSettings.skybox = null;
             var mainCamera = Camera.main;
             if (mainCamera != null)
             {
                 mainCamera.clearFlags = CameraClearFlags.SolidColor;
-                mainCamera.backgroundColor = new Color(.002f,.005f,.012f);
-                mainCamera.farClipPlane = 90f;
+                mainCamera.backgroundColor = new Color(.005f,.012f,.03f);
+                mainCamera.farClipPlane = 110f;
             }
             if (moonlight == null)
             {
                 var lightObject = new GameObject("AshCreek_Moonlight"); lightObject.transform.SetParent(transform); moonlight = lightObject.AddComponent<Light>();
             }
-            moonlight.type = LightType.Directional; moonlight.color = new Color(.48f,.60f,.82f); moonlight.intensity = .98f; moonlight.shadowStrength = .72f; moonlight.shadows = LightShadows.Soft; moonlight.transform.rotation = Quaternion.Euler(48f,40f,0f); moonlight.enabled = true;
+            moonlight.type = LightType.Directional; moonlight.color = new Color(.42f,.54f,.78f); moonlight.intensity = 1.22f; moonlight.shadowStrength = .58f; moonlight.shadows = LightShadows.Soft; moonlight.transform.rotation = Quaternion.Euler(52f,32f,0f); moonlight.enabled = true;
         }
         private void Clear() { if (root != null) Object.Destroy(root.gameObject); foreach (var item in spawned) if (item != null) Object.Destroy(item); spawned.Clear(); }
     }
