@@ -14,12 +14,49 @@ namespace ForgottenTrail
         // These are world-space landmarks for the authored town composition.
         // Keeping them in one contract prevents the imported GLB, procedural
         // gameplay props and narrative targets from drifting apart.
+        public static readonly Vector3 SaloonCenter = new Vector3(-11f, .16f, 10f);
+        public static readonly Vector3 ChurchCenter = new Vector3(10f, .16f, 24f);
         public static readonly Vector3 StationCenter = new Vector3(-11f, 0f, 28f);
+        public static readonly Vector3 BarnCenter = new Vector3(8f, 0f, 50f);
+        public static readonly Vector3 WellCenter = new Vector3(5f, .05f, 10f);
+        public static readonly Vector3 CemeteryCenter = new Vector3(10f, 0f, 38.3f);
+
+        // Origins of the authored procedural shells before they are moved to
+        // the street anchors. These are deliberately kept here so a visual
+        // rebuild cannot silently move the gameplay geometry away from the
+        // imported architecture.
+        public static readonly Vector3 GeneratedSaloonOrigin = new Vector3(-7.6f, 0f, 11.75f);
+        public static readonly Vector3 GeneratedChurchOrigin = new Vector3(7f, 0f, 27.5f);
+
+        public const float SaloonYaw = -90f;
+        public const float ChurchYaw = 90f;
+        public const float StationYaw = -90f;
+        public const float BarnYaw = 0f;
+
+        // The road is the readable spine of the arrival. The first ring of
+        // trees frames the entrance, while the outer ring closes the town in
+        // without blocking the saloon, church or sheriff's office approaches.
+        public static readonly Vector3[] PerimeterTreePositions =
+        {
+            new Vector3(-12f, 0f, -18f), new Vector3(12f, 0f, -18f),
+            new Vector3(-18f, 0f, -22f), new Vector3(18f, 0f, -22f),
+            new Vector3(-25f, 0f, -16f), new Vector3(25f, 0f, -16f),
+            new Vector3(-29f, 0f, -5f), new Vector3(29f, 0f, -4f),
+            new Vector3(-27f, 0f, 6f), new Vector3(28f, 0f, 8f),
+            new Vector3(-29f, 0f, 18f), new Vector3(30f, 0f, 20f),
+            new Vector3(-28f, 0f, 31f), new Vector3(30f, 0f, 33f),
+            new Vector3(-26f, 0f, 44f), new Vector3(28f, 0f, 46f),
+            new Vector3(-21f, 0f, 56f), new Vector3(22f, 0f, 58f),
+            new Vector3(-35f, 0f, 2f), new Vector3(35f, 0f, 6f),
+            new Vector3(-36f, 0f, 14f), new Vector3(36f, 0f, 18f),
+            new Vector3(-36f, 0f, 27f), new Vector3(36f, 0f, 31f),
+            new Vector3(-34f, 0f, 41f), new Vector3(34f, 0f, 45f)
+        };
 
         public static readonly Dictionary<string, Vector3> AuthoredArchitecturePositions = new()
         {
-            ["ARCH_Saloon"] = new Vector3(-11f, .16f, 10f),
-            ["ARCH_Church"] = new Vector3(10f, .16f, 24f),
+            ["ARCH_Saloon"] = SaloonCenter,
+            ["ARCH_Church"] = ChurchCenter,
             ["ARCH_Station"] = new Vector3(-11f, .16f, 28f),
             ["ARCH_BoardingHouse_Pivot"] = new Vector3(-20f, 0f, 8f),
             ["ARCH_Mercantile_Pivot"] = new Vector3(20f, 0f, 10f),
@@ -31,9 +68,9 @@ namespace ForgottenTrail
 
         public static readonly Dictionary<string, float> AuthoredArchitectureYaw = new()
         {
-            ["ARCH_Saloon"] = -90f,
-            ["ARCH_Church"] = 90f,
-            ["ARCH_Station"] = -90f,
+            ["ARCH_Saloon"] = SaloonYaw,
+            ["ARCH_Church"] = ChurchYaw,
+            ["ARCH_Station"] = StationYaw,
             ["ARCH_BoardingHouse_Pivot"] = -90f,
             ["ARCH_Mercantile_Pivot"] = 90f,
             ["ARCH_Blacksmith_Pivot"] = -90f,
@@ -156,6 +193,43 @@ namespace ForgottenTrail
 
         public static Vector3 TargetFor(string step, Vector3 fallback)
             => TargetPoints.TryGetValue(step, out var point) ? point : fallback;
+
+        public static bool IsValidTownPlan(out string error)
+        {
+            error = null;
+            if (SaloonCenter.x >= -4f || StationCenter.x >= -4f)
+            {
+                error = "The saloon and station must remain on the west side of the road.";
+                return false;
+            }
+
+            if (ChurchCenter.x <= 4f || BarnCenter.x <= 2f)
+            {
+                error = "The church and barn must remain on the east side of the road.";
+                return false;
+            }
+
+            if (Mathf.Abs(SaloonCenter.x - StationCenter.x) > 2f ||
+                Mathf.Abs(ChurchCenter.x - CemeteryCenter.x) > 7f)
+            {
+                error = "The west buildings or the church/cemetery axis drifted apart.";
+                return false;
+            }
+
+            if (BarnCenter.z <= CemeteryCenter.z || CemeteryCenter.z <= ChurchCenter.z)
+            {
+                error = "The north progression must be church, cemetery, then barn.";
+                return false;
+            }
+
+            if (WellCenter.x <= 0f || Mathf.Abs(WellCenter.x) > 8f)
+            {
+                error = "The well must sit just east of the central road.";
+                return false;
+            }
+
+            return true;
+        }
 
         public static Vector3 GroundAnchor(Vector3 reference)
             => new Vector3(reference.x, GroundAnchorY, reference.z);

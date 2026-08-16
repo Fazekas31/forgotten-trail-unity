@@ -124,13 +124,30 @@ namespace ForgottenTrail.Tests
         [Test]
         public void BackdropBuildingsKeepTheirDesignReferenceButStartOnTheGround()
         {
-            var reference = new Vector3(-20f, 2.8f, 8f);
+            var reference = TrailArrivalLayout.AuthoredArchitecturePositions["ARCH_BoardingHouse_Pivot"];
             var anchor = TrailArrivalLayout.GroundAnchor(reference);
 
             Assert.That(anchor.x, Is.EqualTo(reference.x).Within(.001f));
             Assert.That(anchor.z, Is.EqualTo(reference.z).Within(.001f));
             Assert.That(anchor.y, Is.EqualTo(TrailArrivalLayout.GroundAnchorY).Within(.001f));
             Assert.That(anchor.y, Is.LessThan(.2f));
+        }
+
+        [Test]
+        public void AshCreekTownPlanKeepsTheNarrativeOrderAndRoadOpen()
+        {
+            Assert.That(TrailArrivalLayout.IsValidTownPlan(out var error), Is.True, error);
+            Assert.That(TrailArrivalLayout.SaloonCenter.x, Is.LessThan(-4f));
+            Assert.That(TrailArrivalLayout.StationCenter.x, Is.LessThan(-4f));
+            Assert.That(TrailArrivalLayout.ChurchCenter.x, Is.GreaterThan(4f));
+            Assert.That(TrailArrivalLayout.BarnCenter.z, Is.GreaterThan(TrailArrivalLayout.CemeteryCenter.z));
+            Assert.That(TrailArrivalLayout.CemeteryCenter.z, Is.GreaterThan(TrailArrivalLayout.ChurchCenter.z));
+
+            foreach (var tree in TrailArrivalLayout.PerimeterTreePositions)
+            {
+                Assert.That(Mathf.Abs(tree.x), Is.GreaterThan(9f), "A perimeter tree entered the central avenue.");
+                Assert.That(tree.z, Is.LessThan(62f), "A perimeter tree is outside the authored town bounds.");
+            }
         }
 
         [Test]
@@ -188,15 +205,15 @@ namespace ForgottenTrail.Tests
             Assert.That(Vector3.Angle(saloonFoundation.up, Vector3.up), Is.LessThan(.01f));
             Assert.That(Vector3.Angle(churchFoundation.up, Vector3.up), Is.LessThan(.01f));
             Assert.That(Vector3.Angle(stationFoundation.up, Vector3.up), Is.LessThan(.01f));
-            Assert.That(saloonFoundation.position.x, Is.EqualTo(-11f).Within(.01f));
-            Assert.That(saloonFoundation.position.y, Is.EqualTo(.16f).Within(.01f));
-            Assert.That(saloonFoundation.position.z, Is.EqualTo(10f).Within(.01f));
-            Assert.That(churchFoundation.position.x, Is.EqualTo(10f).Within(.01f));
-            Assert.That(churchFoundation.position.y, Is.EqualTo(.16f).Within(.01f));
-            Assert.That(churchFoundation.position.z, Is.EqualTo(24f).Within(.01f));
-            Assert.That(stationFoundation.position.x, Is.EqualTo(-11f).Within(.01f));
+            Assert.That(saloonFoundation.position.x, Is.EqualTo(TrailArrivalLayout.SaloonCenter.x).Within(.01f));
+            Assert.That(saloonFoundation.position.y, Is.EqualTo(TrailArrivalLayout.SaloonCenter.y).Within(.01f));
+            Assert.That(saloonFoundation.position.z, Is.EqualTo(TrailArrivalLayout.SaloonCenter.z).Within(.01f));
+            Assert.That(churchFoundation.position.x, Is.EqualTo(TrailArrivalLayout.ChurchCenter.x).Within(.01f));
+            Assert.That(churchFoundation.position.y, Is.EqualTo(TrailArrivalLayout.ChurchCenter.y).Within(.01f));
+            Assert.That(churchFoundation.position.z, Is.EqualTo(TrailArrivalLayout.ChurchCenter.z).Within(.01f));
+            Assert.That(stationFoundation.position.x, Is.EqualTo(TrailArrivalLayout.StationCenter.x).Within(.01f));
             Assert.That(stationFoundation.position.y, Is.EqualTo(.16f).Within(.01f));
-            Assert.That(stationFoundation.position.z, Is.EqualTo(28f).Within(.01f));
+            Assert.That(stationFoundation.position.z, Is.EqualTo(TrailArrivalLayout.StationCenter.z).Within(.01f));
             Object.DestroyImmediate(instance);
         }
 

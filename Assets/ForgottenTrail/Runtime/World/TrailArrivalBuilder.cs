@@ -68,6 +68,9 @@ namespace ForgottenTrail
 
         public void Build(string step)
         {
+            if (!TrailArrivalLayout.IsValidTownPlan(out var layoutError))
+                Debug.LogError("Ash Creek layout contract is invalid: " + layoutError);
+
             BuildAssetStoreTerrainBackdrop();
             BuildArrivalRoad();
             BuildGateAndApproach();
@@ -75,16 +78,16 @@ namespace ForgottenTrail
             BuildReferenceCompositionDressing();
             var saloonStart = root.childCount;
             BuildSaloon(step);
-            ReorientGeneratedBuilding(saloonStart, "SaloonGameplayLayout", new Vector3(-7.6f, 0f, 11.75f),
-                new Vector3(-11f, 0f, 10f), -90f);
+            ReorientGeneratedBuilding(saloonStart, "SaloonGameplayLayout", TrailArrivalLayout.GeneratedSaloonOrigin,
+                TrailArrivalLayout.SaloonCenter, TrailArrivalLayout.SaloonYaw);
             var churchStart = root.childCount;
             BuildChurch(step);
-            ReorientGeneratedBuilding(churchStart, "ChurchGameplayLayout", new Vector3(7f, 0f, 27.5f),
-                new Vector3(10f, 0f, 24f), 90f);
+            ReorientGeneratedBuilding(churchStart, "ChurchGameplayLayout", TrailArrivalLayout.GeneratedChurchOrigin,
+                TrailArrivalLayout.ChurchCenter, TrailArrivalLayout.ChurchYaw);
             var stationStart = root.childCount;
             BuildStation(step);
             ReorientGeneratedBuilding(stationStart, "StationGameplayLayout", TrailArrivalLayout.StationCenter,
-                TrailArrivalLayout.StationCenter, -90f);
+                TrailArrivalLayout.StationCenter, TrailArrivalLayout.StationYaw);
             BuildDistantLandmarks();
             HideProceduralArchitectureMeshes();
             BuildImportedArchitecture();
@@ -129,20 +132,7 @@ namespace ForgottenTrail
             // The reference keeps the central avenue readable and uses a dense
             // conifer wall around the town perimeter. All positions stay well
             // outside the playable road and building footprints.
-            var positions = new[]
-            {
-                new Vector3(-24f, 0f, -13f), new Vector3(24f, 0f, -13f),
-                new Vector3(-29f, 0f, -5f), new Vector3(29f, 0f, -4f),
-                new Vector3(-27f, 0f, 6f), new Vector3(28f, 0f, 8f),
-                new Vector3(-29f, 0f, 18f), new Vector3(30f, 0f, 20f),
-                new Vector3(-28f, 0f, 31f), new Vector3(30f, 0f, 33f),
-                new Vector3(-26f, 0f, 44f), new Vector3(28f, 0f, 46f),
-                new Vector3(-21f, 0f, 56f), new Vector3(22f, 0f, 58f),
-                new Vector3(-35f, 0f, 2f), new Vector3(35f, 0f, 6f),
-                new Vector3(-36f, 0f, 14f), new Vector3(36f, 0f, 18f),
-                new Vector3(-36f, 0f, 27f), new Vector3(36f, 0f, 31f),
-                new Vector3(-34f, 0f, 41f), new Vector3(34f, 0f, 45f)
-            };
+            var positions = TrailArrivalLayout.PerimeterTreePositions;
 
             for (var i = 0; i < positions.Length; i++)
             {
@@ -457,7 +447,7 @@ namespace ForgottenTrail
         {
             // The well sits just off the road center, matching the reference
             // composition without blocking the arrival path.
-            BuildWell(new Vector3(5.0f, .05f, 10.0f));
+            BuildWell(TrailArrivalLayout.WellCenter);
             BuildWagon(new Vector3(3.8f, .04f, 16.0f), 12f);
             BuildWagon(new Vector3(-3.8f, .04f, 34.0f), -20f);
             BuildFence(new Vector3(-19f, .02f, 17f), 9f, 3);
@@ -502,28 +492,29 @@ namespace ForgottenTrail
         {
             // The town plan keeps the barn and cemetery readable beyond the
             // church, exactly where the next chapter is foreshadowed.
-            FrontierShell("ArrivalBarn", new Vector3(8f, 0f, 50f), 13f, 6.4f, darkWood, roof, false);
-            Box("ArrivalBarnDoor", new Vector3(8f, 1.95f, 46.98f), new Vector3(5.2f, 3.7f, .16f), darkWood, false);
-            Box("ArrivalBarnDoorBeam", new Vector3(8f, 3.9f, 46.84f), new Vector3(5.6f, .18f, .22f), trim, false);
-            Text("BARN", new Vector3(8f, 4.2f, 46.78f), 24, new Color(.64f, .42f, .20f), Quaternion.Euler(0f, 180f, 0f));
-            CreatePracticalLight("BarnDistantGlow", new Vector3(8f, 2.5f, 47.1f), new Color(1f, .34f, .11f), 5.5f, .8f);
+            FrontierShell("ArrivalBarn", TrailArrivalLayout.BarnCenter, 13f, 6.4f, darkWood, roof, false);
+            Box("ArrivalBarnDoor", TrailArrivalLayout.BarnCenter + new Vector3(0f, 1.95f, -3.02f), new Vector3(5.2f, 3.7f, .16f), darkWood, false);
+            Box("ArrivalBarnDoorBeam", TrailArrivalLayout.BarnCenter + new Vector3(0f, 3.9f, -3.16f), new Vector3(5.6f, .18f, .22f), trim, false);
+            Text("BARN", TrailArrivalLayout.BarnCenter + new Vector3(0f, 4.2f, -3.22f), 24, new Color(.64f, .42f, .20f), Quaternion.Euler(0f, 180f, 0f));
+            CreatePracticalLight("BarnDistantGlow", TrailArrivalLayout.BarnCenter + new Vector3(0f, 2.5f, -2.9f), new Color(1f, .34f, .11f), 5.5f, .8f);
 
-            const float cemeteryLeft = 5.8f;
-            const float cemeteryRight = 14.2f;
-            const float cemeteryFront = 35.8f;
-            const float cemeteryBack = 40.8f;
+            var cemeteryLeft = TrailArrivalLayout.CemeteryCenter.x - 4.2f;
+            var cemeteryRight = TrailArrivalLayout.CemeteryCenter.x + 4.2f;
+            var cemeteryFront = TrailArrivalLayout.CemeteryCenter.z - 2.5f;
+            var cemeteryBack = TrailArrivalLayout.CemeteryCenter.z + 2.5f;
             for (var i = 0; i < 5; i++)
             {
                 var x = cemeteryLeft + i * (cemeteryRight - cemeteryLeft) / 4f;
                 Box("CemeteryFenceFront", new Vector3(x, .7f, cemeteryFront), new Vector3(.16f, 1.4f, .16f), rust, false);
                 Box("CemeteryFenceBack", new Vector3(x, .7f, cemeteryBack), new Vector3(.16f, 1.4f, .16f), rust, false);
             }
-            Box("CemeteryFenceRailFront", new Vector3(10f, 1.0f, cemeteryFront), new Vector3(8.5f, .14f, .14f), rust, false);
-            Box("CemeteryFenceRailBack", new Vector3(10f, 1.0f, cemeteryBack), new Vector3(8.5f, .14f, .14f), rust, false);
+            Box("CemeteryFenceRailFront", new Vector3(TrailArrivalLayout.CemeteryCenter.x, 1.0f, cemeteryFront), new Vector3(8.5f, .14f, .14f), rust, false);
+            Box("CemeteryFenceRailBack", new Vector3(TrailArrivalLayout.CemeteryCenter.x, 1.0f, cemeteryBack), new Vector3(8.5f, .14f, .14f), rust, false);
             for (var row = 0; row < 2; row++)
                 for (var col = 0; col < 4; col++)
                 {
-                    var grave = Box("CemeteryGrave", new Vector3(7.0f + col * 2.0f, .48f, 37.2f + row * 2.0f),
+                    var grave = Box("CemeteryGrave", new Vector3(cemeteryLeft + 1.2f + col * 2.0f, .48f,
+                            cemeteryFront + 1.4f + row * 2.0f),
                         new Vector3(.42f, .82f, .16f), stone, false);
                     grave.transform.Rotate(0f, col % 2 == 0 ? -8f : 7f, 0f);
                 }
