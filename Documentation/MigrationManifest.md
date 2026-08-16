@@ -11,6 +11,15 @@ Fonte: `/Users/leo/Documents/forgotten-trail`
 - modelos GLB/GLTF são importados pelo pipeline glTFast via Unity MCP;
 - cada lote de assets será validado por escala, materiais, rig e colisão.
 
+## Lote visual importado
+
+- `Resources/Environment/ForgottenTrail_MainEnvironment.glb`: cenário principal authored;
+- `Resources/Characters/CowboyLeo_Head.glb`: cabeça do protagonista;
+- `Resources/Props/PSX_Revolver.fbx`, `PSX_Ammo.glb` e `PSX_KitchenKnife.glb`: props e viewmodels;
+- `Resources/Audio/*`: vento, sinos, passos, madeira, batimento, impacto e gemidos;
+- `Art/Textures/DiaryCover.png`: capa usada na linguagem visual do diário;
+- `Shaders/Source/analog_horror_vhs.gdshader`: shader-fonte preservado para futuras conversões URP; o runtime usa um overlay compatível com IMGUI para manter a apresentação funcional em qualquer pipeline.
+
 ## Mapeamento de sistemas
 
 | Godot | Unity |
@@ -29,8 +38,9 @@ Fonte: `/Users/leo/Documents/forgotten-trail`
 ## Estado atual
 
 - [x] projeto Unity e módulos de domínio iniciais;
-- [ ] jogador e interação;
-- [ ] mundo visual e filtro VHS;
-- [ ] importação dos assets principais;
-- [ ] Atos I–IV jogáveis;
-- [ ] testes Unity e build Windows.
+- [x] jogador e interação;
+- [x] mundo visual e filtro VHS;
+- [x] importação dos assets principais;
+- [x] Atos I–IV jogáveis;
+- [x] testes Unity (EditMode: 4/4);
+- [ ] build Windows (não executado neste ambiente macOS).

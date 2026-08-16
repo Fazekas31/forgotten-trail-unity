@@ -1,6 +1,6 @@
 # Forgotten Trail — Unity
 
-Conversão do projeto Godot de `Documents/forgotten-trail` para Unity 6.3.22f1.
+Conversão do projeto Godot de `Documents/forgotten-trail` para Unity `6000.3.22f1`.
 
 ## Direção de fidelidade
 
@@ -16,6 +16,18 @@ Conversão do projeto Godot de `Documents/forgotten-trail` para Unity 6.3.22f1.
 O código em `Assets/ForgottenTrail/Runtime` separa os módulos de domínio dos adaptadores Unity. A campanha é guiada por Etapas e eventos, e o estado pode ser salvo por checkpoint sem depender da cena ativa.
 
 O projeto original permanece em `/Users/leo/Documents/forgotten-trail` e não é modificado por esta conversão.
+
+## Executar
+
+Abra o projeto no Unity `6000.3.22f1`, carregue `Assets/ForgottenTrail/Scenes/ForgottenTrail.unity` e pressione Play. No menu, escolha **NOVO JOGO**.
+
+Controles: WASD, mouse, Shift para correr, Ctrl para agachar, F para o lampião, I para inventário, J para diário, E para interagir e botão esquerdo para usar a arma equipada.
+
+O cenário authored, cabeça do protagonista, revólver, munição, faca, sons e textura do diário vieram da fonte Godot e estão organizados em `Assets/ForgottenTrail/Resources`.
+
+## Verificação
+
+Os testes EditMode estão em `Assets/ForgottenTrail/Tests/Runtime` e cobrem progressão dos quatro atos, snapshot/save e regras de armas. O último ciclo validado pelo Unity MCP passou com 4 testes.
 
 ## MCP da Unity
 
