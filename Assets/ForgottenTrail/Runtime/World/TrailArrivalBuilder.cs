@@ -30,6 +30,7 @@ namespace ForgottenTrail
         private Material leather;
         private Material candle;
         private Material black;
+        private Material assetStoreRoad;
 
         public TrailArrivalBuilder(Transform root, Material ground, Material road, Material wood, Material darkWood,
             Material brick, Material rust, Material gold, Material foliage, Material trunk, Material stone, Material blood)
@@ -55,6 +56,7 @@ namespace ForgottenTrail
             leather = Tint(darkWood, "Leather", new Color(.16f, .055f, .025f));
             candle = Tint(gold, "CandleWax", new Color(.85f, .62f, .32f));
             black = Tint(darkWood, "Silhouette", new Color(.006f, .004f, .004f));
+            assetStoreRoad = CreateAssetStoreRoadMaterial();
             if (glass.HasProperty("_EmissionColor"))
             {
                 glass.EnableKeyword("_EMISSION");
@@ -64,6 +66,7 @@ namespace ForgottenTrail
 
         public void Build(string step)
         {
+            BuildAssetStoreTerrainBackdrop();
             BuildArrivalRoad();
             BuildGateAndApproach();
             BuildBackdropBuildings();
@@ -71,13 +74,92 @@ namespace ForgottenTrail
             BuildSaloon(step);
             BuildChurch(step);
             BuildStation(step);
+            HideProceduralArchitectureMeshes();
+            BuildImportedArchitecture();
             BuildHorseAndWoundedMan();
             BuildAtmosphericProps(step);
         }
 
+        private void BuildImportedArchitecture()
+        {
+            var prefab = Resources.Load<GameObject>("Environment/AshCreek_Architecture");
+            if (prefab == null)
+            {
+                Debug.LogWarning("Ash Creek architecture GLB was not imported. Falling back to the procedural shells.");
+                return;
+            }
+
+            var architecture = Object.Instantiate(prefab, root);
+            architecture.name = "AshCreek_RealisticArchitecture_Blender";
+            architecture.transform.localPosition = Vector3.zero;
+            // glTFast imports Blender's Z-up/Y-forward coordinates as
+            // (-X, Z, -Y). Convert the authored Blender world back to the
+            // town's Unity layout while keeping the GLB reusable.
+            architecture.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            architecture.transform.localScale = new Vector3(-1f, 1f, 1f);
+        }
+
+        private void BuildAssetStoreTerrainBackdrop()
+        {
+            var prefab = Resources.Load<GameObject>("Environment/AssetStoreTerrainHigh");
+            if (prefab == null)
+            {
+                Debug.LogWarning("Asset Store terrain prefab is not imported. Using the authored town ground only.");
+                return;
+            }
+
+            var terrainRoot = Object.Instantiate(prefab, root);
+            terrainRoot.name = "AshCreek_AssetStoreTerrainBackdrop";
+            const float terrainScale = .05f;
+            terrainRoot.transform.localPosition = new Vector3(-75f, -20f, -50f);
+            terrainRoot.transform.localScale = Vector3.one * terrainScale;
+
+            // The imported demo is a 4x4 kilometre landscape. At 5% scale it
+            // becomes a 200m backdrop. Keep the six tiles touching the playable
+            // town empty so the authored roads, buildings and interiors remain
+            // grounded and readable.
+            foreach (var terrain in terrainRoot.GetComponentsInChildren<Terrain>(true))
+            {
+                var parts = terrain.name.Split('_');
+                if (parts.Length < 3 || !int.TryParse(parts[1], out var tileX) || !int.TryParse(parts[2], out var tileZ))
+                    continue;
+
+                var isTownCutout = (tileX is 1 or 2) && (tileZ is 0 or 1 or 2);
+                terrain.gameObject.SetActive(!isTownCutout);
+            }
+        }
+
+        private void HideProceduralArchitectureMeshes()
+        {
+            foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer.gameObject.name.StartsWith("ARCH_")) continue;
+                if (IsProceduralArchitecturePart(renderer.gameObject.name)) renderer.enabled = false;
+            }
+        }
+
+        private static bool IsProceduralArchitecturePart(string name)
+        {
+            return name.StartsWith("BoardingHouse") || name.StartsWith("Mercantile") ||
+                name.StartsWith("Blacksmith") || name.StartsWith("DoctorHouse") ||
+                name.StartsWith("NorthCabin") || name.StartsWith("EastCabin") ||
+                name.StartsWith("SaloonGroundFloor") || name.StartsWith("SaloonUpperFloor") ||
+                name.StartsWith("SaloonWall") || name.StartsWith("SaloonFront") ||
+                name.StartsWith("SaloonUpper") || name.StartsWith("SaloonRoof") ||
+                name.StartsWith("SaloonSign") || name.StartsWith("SaloonTrimFront") ||
+                name.StartsWith("SaloonPorch") || name.StartsWith("ChurchFloor") ||
+                name.StartsWith("ChurchWall") || name.StartsWith("ChurchFront") ||
+                name.StartsWith("ChurchTower") || name.StartsWith("ChurchRoof") ||
+                name.StartsWith("StationFloor") || name.StartsWith("StationWall") ||
+                name.StartsWith("StationFront") || name.StartsWith("StationLintel") ||
+                name.StartsWith("StationUpper") || name.StartsWith("StationRoof") ||
+                name.StartsWith("StationSign") || name.StartsWith("Window") || name.StartsWith("Door") ||
+                name.StartsWith("Porch");
+        }
+
         private void BuildArrivalRoad()
         {
-            Box("RoadSurface", new Vector3(0f, .035f, 14f), new Vector3(7.2f, .10f, 72f), road);
+            Box("RoadSurface", new Vector3(0f, .035f, 14f), new Vector3(7.2f, .10f, 72f), assetStoreRoad ?? road);
             Box("RoadShoulderLeft", new Vector3(-5.9f, .02f, 14f), new Vector3(4.0f, .06f, 72f), ground, false);
             Box("RoadShoulderRight", new Vector3(5.9f, .02f, 14f), new Vector3(4.0f, .06f, 72f), ground, false);
             Box("RuttLeft", new Vector3(-1.25f, .095f, 14f), new Vector3(.16f, .018f, 70f), darkWood, false);
@@ -663,6 +745,30 @@ namespace ForgottenTrail
             light.range = range;
             light.intensity = intensity;
             light.shadows = LightShadows.Soft;
+        }
+
+        private Material CreateAssetStoreRoadMaterial()
+        {
+            var albedo = Resources.Load<Texture2D>("Environment/AssetStoreRoadTextures/dirtRoad_A");
+            var normal = Resources.Load<Texture2D>("Environment/AssetStoreRoadTextures/dirtRoad_N");
+            if (albedo == null || road == null) return road;
+
+            // Clone the already working project road material so the render
+            // pipeline/shader variant is preserved, then swap only the Asset
+            // Store surface maps. This avoids an unsupported magenta shader
+            // when the URP shader is not included by name in a build.
+            var material = new Material(road) { name = "AshCreek_AssetStoreRoad" };
+            if (material.HasProperty("_BaseMap")) material.SetTexture("_BaseMap", albedo);
+            if (material.HasProperty("_MainTex")) material.SetTexture("_MainTex", albedo);
+            if (normal != null && material.HasProperty("_BumpMap"))
+            {
+                material.EnableKeyword("_NORMALMAP");
+                material.SetTexture("_BumpMap", normal);
+                material.SetFloat("_BumpScale", .65f);
+            }
+            if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", .12f);
+            if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", .02f);
+            return material;
         }
 
         private void Text(string value, Vector3 position, int size, Color color, Quaternion rotation)

@@ -22,6 +22,14 @@
 *.pidb.meta
 /.vs/
 /[Aa]ssets/AssetStoreTools*
+# Asset Store packages are imported from the user's Unity library and are kept
+# out of source control when they contain large vendor terrain datasets.
+/[Aa]ssets/EasyRoads3D/
+/[Aa]ssets/EasyRoads3D.meta
+/[Aa]ssets/EasyRoads3D scenes/
+/[Aa]ssets/EasyRoads3D scenes.meta
+/[Aa]ssets/TerrainDemoScene_URP/
+/[Aa]ssets/TerrainDemoScene_URP.meta
 /[Aa]ssets/StreamingAssets/Generated*
 *.tmp
 *.bak

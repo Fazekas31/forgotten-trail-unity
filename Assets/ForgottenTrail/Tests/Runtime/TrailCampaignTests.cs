@@ -133,6 +133,31 @@ namespace ForgottenTrail.Tests
         }
 
         [Test]
+        public void BlenderArchitectureAssetIsImportedWithAuthoredLandmarks()
+        {
+            var architecture = Resources.Load<GameObject>("Environment/AshCreek_Architecture");
+
+            Assert.That(architecture, Is.Not.Null);
+            Assert.That(architecture.GetComponentsInChildren<MeshRenderer>(true).Length, Is.GreaterThan(100));
+            Assert.That(architecture.GetComponentsInChildren<Transform>(true), Has.Some.Property("name").EqualTo("ARCH_Saloon_Foundation"));
+            Assert.That(architecture.GetComponentsInChildren<Transform>(true), Has.Some.Property("name").EqualTo("ARCH_Church_Tower"));
+            Assert.That(architecture.GetComponentsInChildren<Transform>(true), Has.Some.Property("name").EqualTo("ARCH_Station_Sign_Board"));
+        }
+
+        [Test]
+        public void AssetStoreTerrainAndDirtRoadHooksAreAvailable()
+        {
+            var terrain = Resources.Load<GameObject>("Environment/AssetStoreTerrainHigh");
+            var dirtRoad = Resources.Load<Texture2D>("Environment/AssetStoreRoadTextures/dirtRoad_A");
+            var dirtRoadNormal = Resources.Load<Texture2D>("Environment/AssetStoreRoadTextures/dirtRoad_N");
+
+            Assert.That(terrain, Is.Not.Null);
+            Assert.That(terrain.GetComponentsInChildren<Terrain>(true).Length, Is.EqualTo(16));
+            Assert.That(dirtRoad, Is.Not.Null);
+            Assert.That(dirtRoadNormal, Is.Not.Null);
+        }
+
+        [Test]
         public void StartingTheGameClosesTheMenuAndUnblocksInput()
         {
             var host = new GameObject("TrailUITest");
