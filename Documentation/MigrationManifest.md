@@ -39,7 +39,8 @@ Fonte: `/Users/leo/Documents/forgotten-trail`
 
 - [x] projeto Unity e módulos de domínio iniciais;
 - [x] jogador e interação;
-- [x] mundo visual e filtro VHS;
+- [x] mundo visual authored, paisagem procedural da chegada e filtro VHS;
+- [x] catálogo de assets, licenças, escala, materiais, colisão e LOD em `Documentation/ArtAssetCatalog.md`;
 - [x] importação dos assets principais;
 - [x] Atos I–IV jogáveis;
 - [x] testes Unity (EditMode: 4/4);

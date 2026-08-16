@@ -7,7 +7,7 @@ Conversão do projeto Godot de `Documents/forgotten-trail` para Unity `6000.3.22
 - primeira pessoa, resolução-base 640×360 escalável para 1280×720;
 - paleta quente de madeira, poeira, ferrugem e azul lunar;
 - iluminação noturna com contraste baixo, neblina e luzes práticas;
-- leitura low-poly/PS1 com filtro VHS, granulação e scanlines discretos;
+- realismo estilizado western com geometria authored, paisagem procedural e filtro VHS, granulação e scanlines discretos;
 - investigação, Diário de jornada e defesa limitada continuam sendo o centro do jogo;
 - PT-BR é o idioma padrão; inglês está previsto na mesma interface.
 
@@ -23,7 +23,9 @@ Abra o projeto no Unity `6000.3.22f1`, carregue `Assets/ForgottenTrail/Scenes/Fo
 
 Controles: WASD, mouse, Shift para correr, Ctrl para agachar, F para o lampião, I para inventário, J para diário, E para interagir e botão esquerdo para usar a arma equipada.
 
-O cenário authored, cabeça do protagonista, revólver, munição, faca, sons e textura do diário vieram da fonte Godot e estão organizados em `Assets/ForgottenTrail/Resources`.
+O cenário authored, cabeça do protagonista, revólver, munição, faca, sons e textura do diário vieram da fonte Godot e estão organizados em `Assets/ForgottenTrail/Resources`. A chegada combina esse cenário com estrada de terra, bancos de terreno, árvores, arbustos, capim seco, LOD e luzes práticas gerados pelo `TrailWorldBuilder`.
+
+O catálogo de origem, licenças e convenções de importação está em [`Documentation/ArtAssetCatalog.md`](Documentation/ArtAssetCatalog.md).
 
 ## Verificação
 

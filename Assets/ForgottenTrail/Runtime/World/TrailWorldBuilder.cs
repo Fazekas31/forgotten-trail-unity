@@ -13,7 +13,7 @@ namespace ForgottenTrail
         };
         private Transform root;
         private readonly List<GameObject> spawned = new();
-        private Material ground, wood, darkWood, brick, rust, moon, blood, gold;
+        private Material ground, road, wood, darkWood, brick, rust, moon, blood, gold, foliage, trunk, stone;
         private GameObject authoredEnvironment;
         private Light moonlight;
 
@@ -24,6 +24,7 @@ namespace ForgottenTrail
             CreateBox("Ground", new Vector3(0, -0.18f, 8), new Vector3(44, .3f, 48), ground, true);
             if (act == TrailAct.Arrival && AttachAuthoredEnvironment()) BuildArrivalGameplayMarkers();
             else switch (act) { case TrailAct.Arrival: BuildArrival(); break; case TrailAct.Barn: BuildBarn(); break; case TrailAct.Mine: BuildMine(); break; case TrailAct.Final: BuildFinal(); break; }
+            if (act == TrailAct.Arrival) BuildArrivalScenery();
             if (events.TryGetValue(step, out var eventId)) CreateTarget(step, eventId, TargetTitle(step), TargetText(step), TargetItem(step));
             else if (step == "final_choice") CreateChoiceTarget();
             if (act is TrailAct.Barn or TrailAct.Mine) { CreateInfected(new Vector3(4, .75f, 12)); CreateInfected(new Vector3(-5, .75f, 22)); }
@@ -32,11 +33,120 @@ namespace ForgottenTrail
         private void BuildArrival()
         {
             CreateBox("Saloon", new Vector3(-8, 2.3f, 12), new Vector3(9, 4.6f, 8), wood, false); CreateBox("Church", new Vector3(8, 2.8f, 25), new Vector3(8, 5.6f, 9), brick, false); CreateBox("Station", new Vector3(0, 2.3f, 34), new Vector3(8, 4.6f, 7), darkWood, false);
-            CreateBox("Road", new Vector3(0, .03f, 13), new Vector3(4, .08f, 42), new Material(ground) { color = new Color(.28f,.18f,.11f) }, false); CreateTownDetails();
+            CreateTownDetails();
         }
         private void BuildArrivalGameplayMarkers()
         {
             CreateBox("ArrivalBoundary", new Vector3(0, -0.05f, 31), new Vector3(44, .1f, 1), new Material(ground) { color = new Color(.17f, .09f, .06f) }, false);
+        }
+        private void BuildArrivalScenery()
+        {
+            CreateBox("RoadSurface", new Vector3(0, .035f, 13), new Vector3(5.6f, .08f, 42), road, false);
+            CreateBox("RoadShoulderLeft", new Vector3(-4.1f, .02f, 13), new Vector3(2.5f, .06f, 42), ground, false);
+            CreateBox("RoadShoulderRight", new Vector3(4.1f, .02f, 13), new Vector3(2.5f, .06f, 42), ground, false);
+            CreateBox("TerrainBankLeft", new Vector3(-17f, .16f, 13), new Vector3(18f, .32f, 42), ground, false);
+            CreateBox("TerrainBankRight", new Vector3(17f, .16f, 13), new Vector3(18f, .32f, 42), ground, false);
+
+            var trees = new[]
+            {
+                new Vector3(-13f, .02f, 4f), new Vector3(13f, .02f, 7f), new Vector3(-15f, .02f, 18f),
+                new Vector3(14f, .02f, 21f), new Vector3(-13f, .02f, 29f), new Vector3(14f, .02f, 31f)
+            };
+            for (var i = 0; i < trees.Length; i++) CreateTree("MesquiteTree_" + i, trees[i], 1f + (i % 3) * .12f);
+
+            var shrubs = new[]
+            {
+                new Vector3(-8.5f, .02f, 5f), new Vector3(9.2f, .02f, 11f), new Vector3(-11f, .02f, 23f),
+                new Vector3(10.7f, .02f, 28f), new Vector3(-6.5f, .02f, 34f), new Vector3(7.8f, .02f, 36f)
+            };
+            for (var i = 0; i < shrubs.Length; i++) CreateShrub("DustShrub_" + i, shrubs[i], .8f + (i % 2) * .2f);
+
+            for (var i = 0; i < 18; i++)
+            {
+                var side = i % 2 == 0 ? -1f : 1f;
+                var x = side * (6.5f + (i % 4) * 1.7f);
+                var z = 1.5f + i * 2.05f;
+                CreateGrassTuft("DryGrass_" + i, new Vector3(x, .02f, z), .75f + (i % 3) * .18f);
+            }
+
+            CreatePracticalLight("SaloonPorchLight", new Vector3(-4.1f, 3.1f, 9.1f), new Color(1f, .34f, .12f), 5.5f, 1.35f);
+            CreatePracticalLight("ChurchLanternLight", new Vector3(4.4f, 3.5f, 22.3f), new Color(1f, .48f, .18f), 5f, 1.15f);
+            CreatePracticalLight("StationLanternLight", new Vector3(-2.9f, 3.1f, 31.2f), new Color(1f, .38f, .12f), 4.5f, 1.1f);
+        }
+        private void CreateTree(string name, Vector3 position, float scale)
+        {
+            var tree = new GameObject(name);
+            tree.transform.SetParent(root);
+            tree.transform.localPosition = position;
+            tree.transform.localScale = Vector3.one * scale;
+
+            var lod0Root = new GameObject("LOD0").transform;
+            lod0Root.SetParent(tree.transform);
+            var lod0 = new List<Renderer>
+            {
+                CreateSceneryPart("Trunk", PrimitiveType.Cylinder, lod0Root, new Vector3(0, 2f, 0), new Vector3(.34f, 2f, .34f), trunk).GetComponent<Renderer>(),
+                CreateSceneryPart("CanopyMain", PrimitiveType.Capsule, lod0Root, new Vector3(0, 4.1f, 0), new Vector3(2.2f, .9f, 2.2f), foliage).GetComponent<Renderer>(),
+                CreateSceneryPart("CanopyLeft", PrimitiveType.Capsule, lod0Root, new Vector3(-.9f, 3.55f, .2f), new Vector3(1.45f, .65f, 1.45f), foliage).GetComponent<Renderer>(),
+                CreateSceneryPart("CanopyRight", PrimitiveType.Capsule, lod0Root, new Vector3(.85f, 3.6f, -.15f), new Vector3(1.35f, .62f, 1.35f), foliage).GetComponent<Renderer>()
+            };
+
+            var lod1Root = new GameObject("LOD1").transform;
+            lod1Root.SetParent(tree.transform);
+            var lod1 = new List<Renderer>
+            {
+                CreateSceneryPart("Trunk", PrimitiveType.Cylinder, lod1Root, new Vector3(0, 1.65f, 0), new Vector3(.45f, 1.65f, .45f), trunk).GetComponent<Renderer>(),
+                CreateSceneryPart("Canopy", PrimitiveType.Capsule, lod1Root, new Vector3(0, 3.6f, 0), new Vector3(2.25f, 1.2f, 2.25f), foliage).GetComponent<Renderer>()
+            };
+
+            var group = tree.AddComponent<LODGroup>();
+            group.SetLODs(new[] { new LOD(.55f, lod0.ToArray()), new LOD(.16f, lod1.ToArray()) });
+            group.RecalculateBounds();
+        }
+        private void CreateShrub(string name, Vector3 position, float scale)
+        {
+            var shrub = new GameObject(name);
+            shrub.transform.SetParent(root);
+            shrub.transform.localPosition = position;
+            shrub.transform.localScale = Vector3.one * scale;
+            CreateSceneryPart("LeafClusterA", PrimitiveType.Capsule, shrub.transform, new Vector3(-.45f, .45f, 0), new Vector3(.85f, .45f, .85f), foliage);
+            CreateSceneryPart("LeafClusterB", PrimitiveType.Capsule, shrub.transform, new Vector3(.4f, .55f, .1f), new Vector3(.95f, .55f, .95f), foliage);
+            CreateSceneryPart("LeafClusterC", PrimitiveType.Capsule, shrub.transform, new Vector3(0, .72f, -.35f), new Vector3(.7f, .4f, .7f), foliage);
+        }
+        private void CreateGrassTuft(string name, Vector3 position, float scale)
+        {
+            var tuft = new GameObject(name);
+            tuft.transform.SetParent(root);
+            tuft.transform.localPosition = position;
+            tuft.transform.localScale = Vector3.one * scale;
+            var bladeA = CreateSceneryPart("BladeA", PrimitiveType.Cube, tuft.transform, new Vector3(-.12f, .3f, 0), new Vector3(.08f, .6f, .08f), foliage);
+            var bladeB = CreateSceneryPart("BladeB", PrimitiveType.Cube, tuft.transform, new Vector3(.12f, .24f, .02f), new Vector3(.08f, .48f, .08f), foliage);
+            bladeA.transform.localRotation = Quaternion.Euler(0, 0, -18f);
+            bladeB.transform.localRotation = Quaternion.Euler(0, 0, 16f);
+        }
+        private void CreatePracticalLight(string name, Vector3 position, Color color, float range, float intensity)
+        {
+            CreateSceneryPart(name + "_Lantern", PrimitiveType.Sphere, root, position, Vector3.one * .14f, gold);
+            var lightObject = new GameObject(name);
+            lightObject.transform.SetParent(root);
+            lightObject.transform.localPosition = position;
+            var light = lightObject.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = color;
+            light.range = range;
+            light.intensity = intensity;
+            light.shadows = LightShadows.None;
+        }
+        private GameObject CreateSceneryPart(string name, PrimitiveType primitive, Transform parent, Vector3 position, Vector3 scale, Material material)
+        {
+            var part = GameObject.CreatePrimitive(primitive);
+            part.name = name;
+            part.transform.SetParent(parent);
+            part.transform.localPosition = position;
+            part.transform.localScale = scale;
+            part.GetComponent<Renderer>().sharedMaterial = material;
+            var collider = part.GetComponent<Collider>();
+            if (collider != null) Object.Destroy(collider);
+            return part;
         }
         private bool AttachAuthoredEnvironment()
         {
@@ -103,7 +213,7 @@ namespace ForgottenTrail
         }
         private void CreateTownDetails() { for (var i = -4; i <= 4; i++) { CreateBox("Post", new Vector3(i * 3.5f, 1.2f, 3), new Vector3(.22f, 2.4f, .22f), wood, false); CreateBox("PostRail", new Vector3(i * 3.5f, 1.8f, 3), new Vector3(2.2f, .15f, .15f), wood, false); } CreateCactus(new Vector3(-14, 1, 5)); CreateCactus(new Vector3(13, 1, 15)); }
         private void CreateHayBales() { for (var i = -2; i <= 2; i++) CreateBox("Hay", new Vector3(i * 2.4f, .6f, 18 + (i % 2)), new Vector3(1.8f, 1.2f, 1.4f), new Material(gold) { color = new Color(.48f,.32f,.12f) }, false); }
-        private void CreateRockClusters() { for (var i = -3; i <= 3; i++) { var rock = GameObject.CreatePrimitive(PrimitiveType.Sphere); rock.name = "MineRock"; rock.transform.SetParent(root); rock.transform.localPosition = new Vector3(i * 2.5f, .55f, 7 + (i % 2) * 4); rock.transform.localScale = new Vector3(2.4f, 1.1f, 1.8f); rock.GetComponent<Renderer>().material = darkWood; spawned.Add(rock); } }
+        private void CreateRockClusters() { for (var i = -3; i <= 3; i++) { var rock = GameObject.CreatePrimitive(PrimitiveType.Sphere); rock.name = "MineRock"; rock.transform.SetParent(root); rock.transform.localPosition = new Vector3(i * 2.5f, .55f, 7 + (i % 2) * 4); rock.transform.localScale = new Vector3(2.4f, 1.1f, 1.8f); rock.GetComponent<Renderer>().material = stone; spawned.Add(rock); } }
         private void CreateRitualMarks() { for (var i = 0; i < 6; i++) { var mark = CreateBox("WetMark", new Vector3(Mathf.Sin(i) * 4, .04f, 18 + Mathf.Cos(i) * 4), new Vector3(.15f, .02f, 1.2f), blood, false); mark.transform.Rotate(0, i * 31f, 0); } }
         private void CreateCactus(Vector3 position) { var cactus = GameObject.CreatePrimitive(PrimitiveType.Capsule); cactus.name = "Cactus"; cactus.transform.SetParent(root); cactus.transform.position = position; cactus.transform.localScale = new Vector3(.35f, 1.4f, .35f); cactus.GetComponent<Renderer>().material = new Material(gold) { color = new Color(.18f,.27f,.12f) }; spawned.Add(cactus); }
         private GameObject CreateBox(string name, Vector3 position, Vector3 scale, Material material, bool collision) { var box = GameObject.CreatePrimitive(PrimitiveType.Cube); box.name = name; box.transform.SetParent(root); box.transform.localPosition = position; box.transform.localScale = scale; box.GetComponent<Renderer>().material = material; if (!collision) Object.Destroy(box.GetComponent<BoxCollider>()); spawned.Add(box); return box; }
@@ -116,16 +226,50 @@ namespace ForgottenTrail
         private string TargetTitle(string step) => step switch { "priest" => "PADRE ELIAS", "station_hale" => "XERIFE HALE", "barn_layla" or "mine_reunion" => "LAYLA", "final_chamber" => "A CÂMARA", _ => "PISTA" };
         private string TargetText(string step) => step switch { "arrival" => "O homem ferido entrega o lampião. O cavalo se recusa a atravessar o portão.", "priest" => "Elias confirma que Layla foi levada com os feridos. O distintivo dele abre a próxima conversa.", "station_hale" => "Hale está vivo e trancou a si mesmo para não ferir ninguém.", "barn_layla" => "Layla está viva. A voz que chama do corredor usa as lembranças dela.", "mine_bell" => "A Campainha de Ventilação interrompe a influência do Imitador, mas acorda a mina.", "final_chamber" => "A água escura se move no fundo da câmara. Layla pede que você decida.", _ => "O cowboy observa os vestígios em silêncio." };
         private string TargetItem(string step) => step switch { "arrival" => "lantern", "priest" => "deputy_badge", "station_ledger" => "red_ledger", "station_key" => "barn_key", "barn_map" => "ventilation_map", "mine_bell" => "ventilation_bell", "knife" => "knife", _ => null };
-        private void CreateMaterials() { ground = Material("Ground", new Color(.20f,.14f,.10f)); wood = Material("Wood", new Color(.23f,.12f,.055f)); darkWood = Material("DarkWood", new Color(.08f,.045f,.025f)); brick = Material("Brick", new Color(.22f,.075f,.045f)); rust = Material("Rust", new Color(.28f,.13f,.07f)); moon = Material("Moon", new Color(.18f,.24f,.28f)); blood = Material("Blood", new Color(.18f,.015f,.01f)); gold = Material("Gold", new Color(.55f,.34f,.12f)); }
-        private Material Material(string name, Color color) { var shader = Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit"); var material = new Material(shader) { name = name, color = color }; if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", .12f); if (material.HasProperty("_Glossiness")) material.SetFloat("_Glossiness", .12f); return material; }
+        private void CreateMaterials()
+        {
+            ground = Material("Ground", new Color(.42f, .25f, .12f), "Art/Textures/Main File V1_1_Ground076L_512x512_Color_Orange", new Vector2(6f, 6f));
+            road = Material("Road", new Color(.21f, .12f, .07f), "Art/Textures/Main File V1_1_Ground076L_512x512_Color_Orange", new Vector2(2f, 18f));
+            wood = Material("Wood", new Color(.23f,.12f,.055f), "Art/Textures/Main File V1_1_Planks023A_512x512_Color", new Vector2(2f, 2f));
+            darkWood = Material("DarkWood", new Color(.08f,.045f,.025f), "Art/Textures/Main File V1_1_Planks023A_512x512_Color_Black", new Vector2(2f, 2f));
+            brick = Material("Brick", new Color(.22f,.075f,.045f), "Art/Textures/Main File V1_1_Bricks096_512x512_Color", new Vector2(2f, 2f));
+            rust = Material("Rust", new Color(.28f,.13f,.07f), "Art/Textures/Main File V1_1_Metal041C_512x512_Color", new Vector2(2f, 2f));
+            moon = Material("Moon", new Color(.18f,.24f,.28f));
+            blood = Material("Blood", new Color(.18f,.015f,.01f));
+            gold = Material("Gold", new Color(.55f,.34f,.12f));
+            foliage = Material("Foliage", new Color(.12f,.18f,.08f), "Art/Textures/Main File V1_1_Cactus_512x512_Color", Vector2.one);
+            trunk = Material("TreeTrunk", new Color(.16f,.075f,.035f), "Art/Textures/Main File V1_1_Planks023A_512x512_Color", Vector2.one);
+            stone = Material("Stone", new Color(.18f,.13f,.10f), "Art/Textures/Main File V1_1_PavingStones115B_512x512_Color", Vector2.one);
+        }
+        private Material Material(string name, Color color) => Material(name, color, null, Vector2.one);
+        private Material Material(string name, Color color, string textureResource, Vector2 textureScale)
+        {
+            var shader = Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit");
+            var material = new Material(shader) { name = name };
+            var colorProperty = material.HasProperty("_BaseColor") ? "_BaseColor" : "_Color";
+            if (material.HasProperty(colorProperty)) material.SetColor(colorProperty, color);
+            if (!string.IsNullOrEmpty(textureResource))
+            {
+                var texture = Resources.Load<Texture2D>(textureResource);
+                var textureProperty = material.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
+                if (texture != null && material.HasProperty(textureProperty))
+                {
+                    material.SetTexture(textureProperty, texture);
+                    material.SetTextureScale(textureProperty, textureScale);
+                }
+            }
+            if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", .12f);
+            if (material.HasProperty("_Glossiness")) material.SetFloat("_Glossiness", .12f);
+            return material;
+        }
         private void ConfigureAtmosphere(TrailAct act)
         {
-            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 18f; RenderSettings.fogEndDistance = act == TrailAct.Arrival ? 58f : 42f; RenderSettings.fogColor = new Color(.025f,.018f,.016f); RenderSettings.ambientLight = new Color(.18f,.12f,.09f); RenderSettings.skybox = null;
+            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 18f; RenderSettings.fogEndDistance = act == TrailAct.Arrival ? 58f : 42f; RenderSettings.fogColor = new Color(.025f,.018f,.016f); RenderSettings.ambientLight = new Color(.34f,.23f,.18f); RenderSettings.skybox = null;
             if (moonlight == null)
             {
                 var lightObject = new GameObject("AshCreek_Moonlight"); lightObject.transform.SetParent(transform); moonlight = lightObject.AddComponent<Light>();
             }
-            moonlight.type = LightType.Directional; moonlight.color = new Color(.72f,.48f,.32f); moonlight.intensity = 1.15f; moonlight.transform.rotation = Quaternion.Euler(45f,140f,0f); moonlight.enabled = true;
+            moonlight.type = LightType.Directional; moonlight.color = new Color(.62f,.68f,.82f); moonlight.intensity = 1.15f; moonlight.shadowStrength = .68f; moonlight.shadows = LightShadows.Soft; moonlight.transform.rotation = Quaternion.Euler(48f,40f,0f); moonlight.enabled = true;
         }
         private void Clear() { if (root != null) Object.Destroy(root.gameObject); foreach (var item in spawned) if (item != null) Object.Destroy(item); spawned.Clear(); }
     }
