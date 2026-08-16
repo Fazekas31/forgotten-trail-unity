@@ -31,6 +31,7 @@ namespace ForgottenTrail
         private Material candle;
         private Material black;
         private Material assetStoreRoad;
+        private Transform windowWatcher;
 
         public TrailArrivalBuilder(Transform root, Material ground, Material road, Material wood, Material darkWood,
             Material brick, Material rust, Material gold, Material foliage, Material trunk, Material stone, Material blood)
@@ -551,10 +552,14 @@ namespace ForgottenTrail
             var watcher = new GameObject("WindowWatcher_Silhouette");
             watcher.transform.SetParent(root);
             watcher.transform.localPosition = new Vector3(-1.42f, 4.75f, 13.22f);
-            var body = Part("WatcherBody", PrimitiveType.Capsule, watcher.transform, Vector3.zero, new Vector3(.42f, 1.25f, .18f), black, Quaternion.Euler(90f, 0f, 0f), false);
+            watcher.transform.localScale = Vector3.one * .04f;
+            Part("WatcherBody", PrimitiveType.Capsule, watcher.transform, Vector3.zero, new Vector3(.42f, 1.25f, .18f), black, Quaternion.Euler(90f, 0f, 0f), false);
             Part("WatcherHead", PrimitiveType.Sphere, watcher.transform, new Vector3(0f, .86f, 0f), new Vector3(.45f, .45f, .20f), black, Quaternion.identity, false);
             Part("WatcherShoulder", PrimitiveType.Cube, watcher.transform, new Vector3(0f, .22f, 0f), new Vector3(1.15f, .25f, .22f), black, Quaternion.identity, false);
+            windowWatcher = watcher.transform;
         }
+
+        public Transform WindowWatcher => windowWatcher;
 
         private void BuildChurch(string step)
         {

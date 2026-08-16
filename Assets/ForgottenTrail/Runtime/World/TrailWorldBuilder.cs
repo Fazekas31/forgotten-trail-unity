@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,6 +15,7 @@ namespace ForgottenTrail
         private readonly List<GameObject> spawned = new();
         private Material ground, road, wood, darkWood, brick, rust, moon, blood, gold, foliage, trunk, stone;
         private Light moonlight;
+        private TrailArrivalBuilder arrivalBuilder;
 
         public void Build(TrailAct act, string step)
         {
@@ -25,12 +27,46 @@ namespace ForgottenTrail
             if (act == TrailAct.Arrival)
             {
                 SpawnPoint = TrailArrivalLayout.SpawnFor(step, SpawnPoint);
-                new TrailArrivalBuilder(root, ground, road, wood, darkWood, brick, rust, gold, foliage, trunk, stone, blood).Build(step);
+                arrivalBuilder = new TrailArrivalBuilder(root, ground, road, wood, darkWood, brick, rust, gold, foliage, trunk, stone, blood);
+                arrivalBuilder.Build(step);
             }
             else switch (act) { case TrailAct.Barn: BuildBarn(); break; case TrailAct.Mine: BuildMine(); break; case TrailAct.Final: BuildFinal(); break; }
             if (events.TryGetValue(step, out var eventId)) CreateTarget(step, eventId, TargetTitle(step), TargetText(step), TargetItem(step));
             else if (step == "final_choice") CreateChoiceTarget();
             if (act is TrailAct.Barn or TrailAct.Mine) { CreateInfected(new Vector3(4, .75f, 12)); CreateInfected(new Vector3(-5, .75f, 22)); }
+        }
+
+        public void PlayWindowWatcherBeat()
+        {
+            var watcher = arrivalBuilder?.WindowWatcher;
+            if (watcher == null) return;
+            StopCoroutine(nameof(RevealWindowWatcher));
+            StartCoroutine(RevealWindowWatcher(watcher));
+        }
+
+        private IEnumerator RevealWindowWatcher(Transform watcher)
+        {
+            if (watcher == null) yield break;
+            var start = watcher.localPosition + new Vector3(.62f, -.02f, .04f);
+            var finish = watcher.localPosition;
+            watcher.localPosition = start;
+            watcher.localScale = Vector3.one * .04f;
+
+            const float duration = .7f;
+            var elapsed = 0f;
+            while (elapsed < duration)
+            {
+                if (watcher == null) yield break;
+                elapsed += Time.deltaTime;
+                var t = Mathf.Clamp01(elapsed / duration);
+                t = t * t * (3f - 2f * t);
+                watcher.localPosition = Vector3.Lerp(start, finish, t);
+                watcher.localScale = Vector3.one * Mathf.Lerp(.04f, 1f, t);
+                yield return null;
+            }
+
+            watcher.localPosition = finish;
+            watcher.localScale = Vector3.one;
         }
 
         private void BuildArrival()

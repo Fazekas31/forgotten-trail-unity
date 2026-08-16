@@ -55,11 +55,16 @@ namespace ForgottenTrail
         public void Interact(TrailInteractable target)
         {
             if (!IsRunning || target == null) return;
+            var completedStep = Campaign.CurrentStep;
             if (target.kind == InteractionKind.Choice) { UI.ShowChoice(); return; }
             var eventId = target.eventId; var itemId = target.itemId; var targetTitle = target.title; var targetText = target.inspectionText;
             if (!Campaign.Report(eventId)) { UI.Toast(Localization.Text("O rastro ainda não leva até aqui.", "The trail does not lead here yet.")); return; }
             if (!string.IsNullOrEmpty(itemId)) { Inventory.Add(itemId); if (itemId == "lantern") Lantern.Acquire(); if (itemId == "knife") Player.EquipWeapon("knife"); }
-            Journal.RecordForStep(Campaign.CurrentStep); UI.ShowInspection(Localization.Text(targetTitle, targetTitle), Localization.Text(targetText, targetText)); Audio.PlayCue(itemId != null ? "evidence" : "creak"); SaveSnapshot();
+            Journal.RecordForStep(Campaign.CurrentStep);
+            UI.ShowInspection(Localization.Text(targetTitle, targetTitle), Localization.Text(targetText, targetText));
+            Audio.PlayCue(itemId != null ? "evidence" : "creak");
+            PlayNarrativeBeat(completedStep);
+            SaveSnapshot();
         }
         public void ToggleLantern() { if (!Lantern.Available) { UI.Toast(Localization.Text("Ainda não tenho um lampião.", "I do not have a lantern yet.")); return; } Lantern.Toggle(); lanternLight.enabled = Lantern.Lit; Audio.PlayCue("creak"); }
         private void ChooseEnding(TrailEnding ending) { if (!Campaign.ChooseEnding(ending)) return; Journal.AddEnding(ending); UI.CloseChoice(); UI.DrawEnding(ending); SaveSnapshot(); }
@@ -67,6 +72,33 @@ namespace ForgottenTrail
         private void OnCheckpoint(string checkpoint) { if (IsRunning) SaveSnapshot(); }
         private void OnCompleted(TrailEnding ending) { IsRunning = true; }
         private void BuildCurrentAct() { world.Build(Campaign.CurrentAct, Campaign.CurrentStep); Player.Teleport(world.SpawnPoint); lanternLight.enabled = Lantern.Lit; }
+        private void PlayNarrativeBeat(string completedStep)
+        {
+            switch (completedStep)
+            {
+                case "diary":
+                    Audio.PlayCue("heartbeat");
+                    world.PlayWindowWatcherBeat();
+                    break;
+                case "message":
+                    Audio.PlayCue("heartbeat");
+                    world.PlayWindowWatcherBeat();
+                    break;
+                case "window":
+                    Audio.PlayCue("impact");
+                    Audio.PlayDelayed("creak", .22f);
+                    break;
+                case "downstairs_noise":
+                    Audio.PlayCue("creak");
+                    break;
+                case "exit_saloon":
+                    Audio.PlayDelayed("church_bell", .35f);
+                    break;
+                case "priest":
+                    Audio.PlayCue("heartbeat");
+                    break;
+            }
+        }
         private void SaveSnapshot() { if (Save != null) Save.Save(Campaign.Snapshot(Inventory, Journal, Lantern)); }
     }
 }
