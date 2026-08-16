@@ -145,6 +145,67 @@ namespace ForgottenTrail.Tests
         }
 
         [Test]
+        public void AuthoredArchitectureBackdropPivotsDoNotRollBuildings()
+        {
+            var architecture = Resources.Load<GameObject>("Environment/AshCreek_Architecture");
+            Assert.That(architecture, Is.Not.Null);
+
+            var pivots = new List<Transform>();
+            foreach (var transform in architecture.GetComponentsInChildren<Transform>(true))
+                if (transform.name.EndsWith("_Pivot")) pivots.Add(transform);
+
+            Assert.That(pivots, Is.Not.Empty);
+            foreach (var pivot in pivots)
+            {
+                var angles = pivot.localEulerAngles;
+                Assert.That(Mathf.Abs(Mathf.DeltaAngle(angles.x, 0f)), Is.LessThan(.01f), pivot.name + " has pitch");
+                Assert.That(Mathf.Abs(Mathf.DeltaAngle(angles.z, 0f)), Is.LessThan(.01f), pivot.name + " has roll");
+            }
+        }
+
+        [Test]
+        public void AuthoredArchitectureConversionKeepsLandmarksUpright()
+        {
+            var prefab = Resources.Load<GameObject>("Environment/AshCreek_Architecture");
+            Assert.That(prefab, Is.Not.Null);
+
+            var instance = Object.Instantiate(prefab);
+            instance.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            instance.transform.localScale = new Vector3(-1f, 1f, 1f);
+            foreach (Transform child in instance.transform)
+            {
+                child.localRotation = child.name.EndsWith("_Pivot")
+                    ? Quaternion.identity
+                    : Quaternion.Euler(-90f, 0f, 0f) * child.localRotation;
+            }
+            var saloonFoundation = FindChild(instance.transform, "ARCH_Saloon_Foundation");
+            var churchFoundation = FindChild(instance.transform, "ARCH_Church_Foundation");
+            var stationFoundation = FindChild(instance.transform, "ARCH_Station_Foundation");
+
+            Assert.That(saloonFoundation, Is.Not.Null);
+            Assert.That(Vector3.Angle(saloonFoundation.up, Vector3.up), Is.LessThan(.01f));
+            Assert.That(Vector3.Angle(churchFoundation.up, Vector3.up), Is.LessThan(.01f));
+            Assert.That(Vector3.Angle(stationFoundation.up, Vector3.up), Is.LessThan(.01f));
+            Assert.That(saloonFoundation.position.x, Is.EqualTo(-7.6f).Within(.01f));
+            Assert.That(saloonFoundation.position.y, Is.EqualTo(.16f).Within(.01f));
+            Assert.That(saloonFoundation.position.z, Is.EqualTo(11.75f).Within(.01f));
+            Assert.That(churchFoundation.position.x, Is.EqualTo(7f).Within(.01f));
+            Assert.That(churchFoundation.position.y, Is.EqualTo(.16f).Within(.01f));
+            Assert.That(churchFoundation.position.z, Is.EqualTo(27.5f).Within(.01f));
+            Assert.That(stationFoundation.position.x, Is.EqualTo(0f).Within(.01f));
+            Assert.That(stationFoundation.position.y, Is.EqualTo(.16f).Within(.01f));
+            Assert.That(stationFoundation.position.z, Is.EqualTo(36.25f).Within(.01f));
+            Object.DestroyImmediate(instance);
+        }
+
+        private static Transform FindChild(Transform root, string name)
+        {
+            foreach (var child in root.GetComponentsInChildren<Transform>(true))
+                if (child.name == name) return child;
+            return null;
+        }
+
+        [Test]
         public void AssetStoreTerrainAndDirtRoadHooksAreAvailable()
         {
             var terrain = Resources.Load<GameObject>("Environment/AssetStoreTerrainHigh");

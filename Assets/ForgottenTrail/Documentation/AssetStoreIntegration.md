@@ -13,3 +13,8 @@ imported on another machine.
 The main architectural landmarks remain in `Resources/Environment/AshCreek_Architecture.glb`.
 Asset Store content is used for environmental dressing and surface language, not as a replacement
 for the story locations (saloon, church, station and barn route).
+
+The runtime copies three compatible tree prefabs into `Resources/Environment/AssetStoreTrees` and
+places them around the town perimeter. Their source meshes and textures still come from the
+locally imported Terrain package; the runtime removes the package's SpeedTree renderer component
+and repairs the materials for this URP scene so they do not render magenta.

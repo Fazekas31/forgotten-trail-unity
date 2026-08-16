@@ -76,6 +76,7 @@ namespace ForgottenTrail
             BuildStation(step);
             HideProceduralArchitectureMeshes();
             BuildImportedArchitecture();
+            BuildImportedTrees();
             BuildHorseAndWoundedMan();
             BuildAtmosphericProps(step);
         }
@@ -92,11 +93,108 @@ namespace ForgottenTrail
             var architecture = Object.Instantiate(prefab, root);
             architecture.name = "AshCreek_RealisticArchitecture_Blender";
             architecture.transform.localPosition = Vector3.zero;
-            // glTFast imports Blender's Z-up/Y-forward coordinates as
-            // (-X, Z, -Y). Convert the authored Blender world back to the
-            // town's Unity layout while keeping the GLB reusable.
+            // The authored Blender file uses Y as its construction height and
+            // the GLB importer stores that authored axis as the local Z axis.
+            // Keep the root conversion so positions land on the Ash Creek
+            // street, then compensate each direct mesh node so it stays upright.
             architecture.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             architecture.transform.localScale = new Vector3(-1f, 1f, 1f);
+
+            // The old showcase pivots made the backdrop read as leaning
+            // buildings from first person. They are still useful for their
+            // authored positions, but all backdrop pivots are street-aligned.
+            foreach (Transform child in architecture.transform)
+            {
+                child.localRotation = child.name.EndsWith("_Pivot")
+                    ? Quaternion.identity
+                    : Quaternion.Euler(-90f, 0f, 0f) * child.localRotation;
+            }
+        }
+
+        private void BuildImportedTrees()
+        {
+            var treePrefabs = new[]
+            {
+                Resources.Load<GameObject>("Environment/AssetStoreTrees/Pine_A"),
+                Resources.Load<GameObject>("Environment/AssetStoreTrees/Pine_B"),
+                Resources.Load<GameObject>("Environment/AssetStoreTrees/Cypress_Forest_Desktop")
+            };
+            var positions = new[]
+            {
+                new Vector3(-22f, 0f, -8f), new Vector3(22f, 0f, -6f),
+                new Vector3(-22f, 0f, 6f), new Vector3(22f, 0f, 10f),
+                new Vector3(-23f, 0f, 23f), new Vector3(23f, 0f, 27f),
+                new Vector3(-18f, 0f, 45f), new Vector3(19f, 0f, 46f),
+                new Vector3(-29f, 0f, 16f), new Vector3(29f, 0f, 20f)
+            };
+
+            for (var i = 0; i < positions.Length; i++)
+            {
+                var prefab = treePrefabs[i % treePrefabs.Length];
+                if (prefab == null) continue;
+                var tree = Object.Instantiate(prefab, root);
+                tree.name = "AshCreek_AssetStoreTree_" + i;
+                tree.transform.localPosition = positions[i];
+                tree.transform.localRotation = Quaternion.Euler(0f, (i * 37f) % 360f, 0f);
+                tree.transform.localScale = Vector3.one * (i % 3 == 0 ? 1.15f : .92f);
+                foreach (var speedTree in tree.GetComponentsInChildren<Tree>(true))
+                    Object.Destroy(speedTree);
+                RepairImportedTreeMaterials(tree);
+            }
+        }
+
+        private void RepairImportedTreeMaterials(GameObject tree)
+        {
+            var shader = Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) return;
+
+            foreach (var renderer in tree.GetComponentsInChildren<Renderer>(true))
+            {
+                var sourceMaterials = renderer.sharedMaterials;
+                var repairedMaterials = new Material[sourceMaterials.Length];
+                for (var i = 0; i < sourceMaterials.Length; i++)
+                {
+                    var source = sourceMaterials[i];
+                    var repaired = new Material(shader)
+                    {
+                        name = "AshCreek_AssetStoreTree_" + (source != null ? source.name : "Material")
+                    };
+                    if (source != null)
+                    {
+                        var albedo = source.GetTexture("_BaseMap") ?? source.GetTexture("_MainTex");
+                        var textureProperty = repaired.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
+                        if (albedo != null && repaired.HasProperty(textureProperty))
+                        {
+                            repaired.SetTexture(textureProperty, albedo);
+                            repaired.SetTextureScale(textureProperty, source.GetTextureScale(source.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex"));
+                        }
+                        if (source.HasProperty("_BumpMap") && repaired.HasProperty("_BumpMap"))
+                        {
+                            repaired.SetTexture("_BumpMap", source.GetTexture("_BumpMap"));
+                            repaired.EnableKeyword("_NORMALMAP");
+                        }
+                        var sourceColorProperty = source.HasProperty("_BaseColor") ? "_BaseColor" : "_Color";
+                        var repairedColorProperty = repaired.HasProperty("_BaseColor") ? "_BaseColor" : "_Color";
+                        if (source.HasProperty(sourceColorProperty) && repaired.HasProperty(repairedColorProperty))
+                            repaired.SetColor(repairedColorProperty, source.GetColor(sourceColorProperty));
+
+                        var alphaClip = source.HasProperty("_AlphaClip") && source.GetFloat("_AlphaClip") > .5f;
+                        if (source.name.Contains("Billboard")) alphaClip = true;
+                        if (alphaClip)
+                        {
+                            if (repaired.HasProperty("_Mode")) repaired.SetFloat("_Mode", 1f);
+                            if (repaired.HasProperty("_Surface")) repaired.SetFloat("_Surface", 0f);
+                            if (repaired.HasProperty("_AlphaClip")) repaired.SetFloat("_AlphaClip", 1f);
+                            if (repaired.HasProperty("_Cutoff")) repaired.SetFloat("_Cutoff", .30f);
+                            if (repaired.HasProperty("_Cutoff")) repaired.SetFloat("_AlphaClipThreshold", .30f);
+                            repaired.EnableKeyword("_ALPHATEST_ON");
+                            repaired.renderQueue = 2450;
+                        }
+                    }
+                    repairedMaterials[i] = repaired;
+                }
+                renderer.sharedMaterials = repairedMaterials;
+            }
         }
 
         private void BuildAssetStoreTerrainBackdrop()
@@ -126,6 +224,11 @@ namespace ForgottenTrail
 
                 var isTownCutout = (tileX is 1 or 2) && (tileZ is 0 or 1 or 2);
                 terrain.gameObject.SetActive(!isTownCutout);
+                // The package's SpeedTree materials target a different render
+                // pipeline and turn magenta in this URP scene. We place the
+                // same package tree meshes explicitly below after repairing
+                // their materials, while keeping the terrain relief/rocks.
+                terrain.drawTreesAndFoliage = false;
             }
         }
 
@@ -159,7 +262,40 @@ namespace ForgottenTrail
 
         private void BuildArrivalRoad()
         {
-            Box("RoadSurface", new Vector3(0f, .035f, 14f), new Vector3(7.2f, .10f, 72f), assetStoreRoad ?? road);
+            var roadObject = new GameObject("RoadSurface_EasyRoadsDirt");
+            roadObject.transform.SetParent(root);
+            var mesh = new Mesh { name = "AshCreek_EasyRoadsDirtMesh" };
+            const int segments = 12;
+            var vertices = new Vector3[(segments + 1) * 2];
+            var uvs = new Vector2[vertices.Length];
+            var triangles = new int[segments * 6];
+            for (var i = 0; i <= segments; i++)
+            {
+                var t = i / (float)segments;
+                var z = -20f + t * 72f;
+                var center = Mathf.Sin(t * 1.35f) * .32f;
+                var width = 7.15f + Mathf.Sin(t * 2.1f) * .25f;
+                vertices[i * 2] = new Vector3(center - width * .5f, .045f + Mathf.Sin(t * 7f) * .008f, z);
+                vertices[i * 2 + 1] = new Vector3(center + width * .5f, .045f + Mathf.Cos(t * 6f) * .008f, z);
+                uvs[i * 2] = new Vector2(0f, t * 9f);
+                uvs[i * 2 + 1] = new Vector2(1f, t * 9f);
+                if (i == segments) continue;
+                var baseIndex = i * 6;
+                var vertexIndex = i * 2;
+                triangles[baseIndex] = vertexIndex;
+                triangles[baseIndex + 1] = vertexIndex + 2;
+                triangles[baseIndex + 2] = vertexIndex + 1;
+                triangles[baseIndex + 3] = vertexIndex + 1;
+                triangles[baseIndex + 4] = vertexIndex + 2;
+                triangles[baseIndex + 5] = vertexIndex + 3;
+            }
+            mesh.vertices = vertices;
+            mesh.uv = uvs;
+            mesh.triangles = triangles;
+            mesh.RecalculateNormals();
+            roadObject.AddComponent<MeshFilter>().sharedMesh = mesh;
+            roadObject.AddComponent<MeshRenderer>().sharedMaterial = assetStoreRoad ?? road;
+            roadObject.AddComponent<MeshCollider>().sharedMesh = mesh;
             Box("RoadShoulderLeft", new Vector3(-5.9f, .02f, 14f), new Vector3(4.0f, .06f, 72f), ground, false);
             Box("RoadShoulderRight", new Vector3(5.9f, .02f, 14f), new Vector3(4.0f, .06f, 72f), ground, false);
             Box("RuttLeft", new Vector3(-1.25f, .095f, 14f), new Vector3(.16f, .018f, 70f), darkWood, false);
@@ -205,15 +341,6 @@ namespace ForgottenTrail
             FrontierShell("DoctorHouse", new Vector3(16f, 2.8f, 29f), 8.0f, 6.3f, plaster, roof, true);
             FrontierShell("NorthCabin", new Vector3(-13.5f, 2.2f, 43f), 7.0f, 5.0f, wood, roof, false);
             FrontierShell("EastCabin", new Vector3(14f, 2.2f, 43f), 7.0f, 5.0f, wood, roof, false);
-
-            CreateTree("TreeWestEntry", new Vector3(-12f, .02f, -10f), 1.15f);
-            CreateTree("TreeEastEntry", new Vector3(12f, .02f, -8f), 1.05f);
-            CreateTree("TreeWestStreet", new Vector3(-14f, .02f, 15f), 1.2f);
-            CreateTree("TreeEastStreet", new Vector3(14f, .02f, 19f), 1.1f);
-            CreateTree("TreeWestNorth", new Vector3(-13f, .02f, 37f), 1.25f);
-            CreateTree("TreeEastNorth", new Vector3(13f, .02f, 36f), 1.0f);
-            CreateTree("TreeFarWest", new Vector3(-20f, .02f, 48f), 1.45f);
-            CreateTree("TreeFarEast", new Vector3(20f, .02f, 48f), 1.35f);
         }
 
         private void BuildStreetFurniture()
@@ -766,6 +893,10 @@ namespace ForgottenTrail
                 material.SetTexture("_BumpMap", normal);
                 material.SetFloat("_BumpScale", .65f);
             }
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", new Color(.48f, .31f, .17f, 1f));
+            if (material.HasProperty("_Color")) material.SetColor("_Color", new Color(.48f, .31f, .17f, 1f));
+            if (material.HasProperty("_BaseMap")) material.SetTextureScale("_BaseMap", new Vector2(1.35f, 8f));
+            if (material.HasProperty("_MainTex")) material.SetTextureScale("_MainTex", new Vector2(1.35f, 8f));
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", .12f);
             if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", .02f);
             return material;

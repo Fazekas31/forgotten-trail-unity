@@ -386,12 +386,12 @@ def build_station(parent: bpy.types.Collection, mats: dict[str, bpy.types.Materi
 
 def build_backdrop(parent: bpy.types.Collection, mats: dict[str, bpy.types.Material]) -> None:
     buildings = [
-        ("ARCH_BoardingHouse", (-15.0, 0.0, 7.0), 7.2, 5.5, 4.9, mats["plaster"], 7, True, 17.0),
-        ("ARCH_Mercantile", (15.0, 0.0, 10.7), 8.6, 5.9, 5.2, mats["brick"], 8, True, -18.0),
-        ("ARCH_Blacksmith", (-15.2, 0.0, 25.8), 8.0, 6.1, 5.1, mats["wood_dark"], 7, False, 12.0),
-        ("ARCH_DoctorHouse", (15.1, 0.0, 29.3), 7.9, 6.1, 5.4, mats["plaster"], 7, True, -13.0),
-        ("ARCH_NorthCabin", (-12.4, 0.0, 44.2), 7.2, 5.2, 4.6, mats["wood"], 7, False, 10.0),
-        ("ARCH_EastCabin", (13.5, 0.0, 44.8), 7.4, 5.4, 4.8, mats["wood_dark"], 7, False, -14.0),
+        ("ARCH_BoardingHouse", (-15.0, 0.0, 7.0), 7.2, 5.5, 4.9, mats["plaster"], 7, True, 0.0),
+        ("ARCH_Mercantile", (15.0, 0.0, 10.7), 8.6, 5.9, 5.2, mats["brick"], 8, True, 0.0),
+        ("ARCH_Blacksmith", (-15.2, 0.0, 25.8), 8.0, 6.1, 5.1, mats["wood_dark"], 7, False, 0.0),
+        ("ARCH_DoctorHouse", (15.1, 0.0, 29.3), 7.9, 6.1, 5.4, mats["plaster"], 7, True, 0.0),
+        ("ARCH_NorthCabin", (-12.4, 0.0, 44.2), 7.2, 5.2, 4.6, mats["wood"], 7, False, 0.0),
+        ("ARCH_EastCabin", (13.5, 0.0, 44.8), 7.4, 5.4, 4.8, mats["wood_dark"], 7, False, 0.0),
     ]
     for name, center, width, depth, height, wall, windows, porch, yaw in buildings:
         before = set(bpy.context.scene.objects)
