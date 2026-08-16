@@ -119,5 +119,19 @@ namespace ForgottenTrail.Tests
             Assert.That(TrailArrivalLayout.SpawnFor("enter_church", Vector3.zero).z, Is.LessThan(TrailArrivalLayout.SpawnFor("station", Vector3.zero).z));
             Assert.That(TrailArrivalLayout.TargetFor("station_ledger", Vector3.zero).y, Is.GreaterThan(3.5f));
         }
+
+        [Test]
+        public void StartingTheGameClosesTheMenuAndUnblocksInput()
+        {
+            var host = new GameObject("TrailUITest");
+            var ui = host.AddComponent<TrailUI>();
+
+            Assert.That(ui.MenuOpen, Is.True);
+            ui.StartGame();
+
+            Assert.That(ui.MenuOpen, Is.False);
+            Assert.That(ui.BlocksPlayer, Is.False);
+            Object.DestroyImmediate(host);
+        }
     }
 }

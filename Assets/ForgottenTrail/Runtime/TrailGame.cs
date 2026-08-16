@@ -30,6 +30,13 @@ namespace ForgottenTrail
             lanternLight = Player.PlayerCamera.gameObject.AddComponent<Light>(); lanternLight.type = LightType.Spot; lanternLight.range = 16f; lanternLight.spotAngle = 54f; lanternLight.intensity = 2.3f; lanternLight.color = new Color(1f,.59f,.25f); lanternLight.enabled = false;
         }
 
+        private void Start()
+        {
+            // Play Mode is the fastest way to test the demo in the Unity Editor.
+            // Keep the menu available after ReturnToMenu, but boot the first session automatically.
+            if (Application.isPlaying && !IsRunning && UI != null) StartNewGame();
+        }
+
         private void ResetModels() { Campaign = new TrailCampaign(); Inventory = new InventoryModel(); Journal = new JournalModel(); Lantern = new LanternModel(); Save = new TrailSaveStore(); Campaign.StepChanged += OnStepChanged; Campaign.CheckpointReached += OnCheckpoint; Campaign.Completed += OnCompleted; }
         private void Update()
         {
