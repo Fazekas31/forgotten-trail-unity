@@ -66,7 +66,9 @@ namespace ForgottenTrail
         {
             var player = game.Player; GUI.color = new Color(.82f, .70f, .50f, 1);
             GUI.Box(new Rect(12, 12, 300, 52), "", panel); GUI.Label(new Rect(24, 18, 276, 42), game.Localization.LabelObjective + "\n" + game.Localization.Objective(game.Campaign.CurrentStep), small);
-            GUI.Label(new Rect(12, Screen.height - 30, 520, 22), "[Shift] correr   [Ctrl] agachar   [F] lampião   [I] recursos   [J] diário   [Esc] pausa", small);
+            GUI.Label(new Rect(12, Screen.height - 30, 640, 22), "[Shift] correr   [Ctrl] agachar   [F] lampião   [I] recursos   [J] diário   [Esc] pausa   [F8] visão aérea", small);
+            if (game.LayoutPreviewActive)
+                GUI.Label(new Rect(Screen.width / 2 - 220, Screen.height - 62, 440, 24), "VISÃO AÉREA DA PLANTA  •  pressione F8 para voltar", body);
             if (player != null && player.Focused != null) GUI.Label(new Rect(Screen.width / 2 - 180, Screen.height - 74, 360, 30), "[E] " + player.Focused.Prompt, body);
         }
 

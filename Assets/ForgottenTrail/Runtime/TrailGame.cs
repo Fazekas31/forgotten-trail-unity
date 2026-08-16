@@ -15,8 +15,13 @@ namespace ForgottenTrail
         public TrailAudioDirector Audio { get; private set; }
         public TrailUI UI { get; private set; }
         public bool IsRunning { get; private set; }
+        public bool LayoutPreviewActive => layoutPreviewActive;
         private TrailWorldBuilder world;
         private Light lanternLight;
+        private Light layoutPreviewLight;
+        private Camera layoutPreviewCamera;
+        private bool layoutPreviewActive;
+        private bool layoutPreviewFogWasEnabled;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap() { if (FindFirstObjectByType<TrailGame>() == null) new GameObject("ForgottenTrail").AddComponent<TrailGame>(); }
@@ -41,6 +46,10 @@ namespace ForgottenTrail
         private void Update()
         {
             if (!IsRunning) return;
+#if UNITY_EDITOR
+            if (Input.GetKeyDown(KeyCode.F8)) { ToggleLayoutPreview(); return; }
+#endif
+            if (layoutPreviewActive) return;
             if (UI.InspectionVisible && Input.GetKeyDown(KeyCode.E)) { UI.CloseInspection(); return; }
             if (UI.ChoiceOpen) { if (Input.GetKeyDown(KeyCode.Alpha1)) ChooseEnding(TrailEnding.SharedTrail); if (Input.GetKeyDown(KeyCode.Alpha2)) ChooseEnding(TrailEnding.DefinitiveSilence); return; }
             if (Input.GetKeyDown(KeyCode.Escape)) UI.TogglePause();
@@ -71,7 +80,62 @@ namespace ForgottenTrail
         private void OnStepChanged(string step) { if (IsRunning) { Journal.RecordForStep(step); BuildCurrentAct(); } }
         private void OnCheckpoint(string checkpoint) { if (IsRunning) SaveSnapshot(); }
         private void OnCompleted(TrailEnding ending) { IsRunning = true; }
-        private void BuildCurrentAct() { world.Build(Campaign.CurrentAct, Campaign.CurrentStep); Player.Teleport(world.SpawnPoint); lanternLight.enabled = Lantern.Lit; }
+        private void BuildCurrentAct()
+        {
+            if (layoutPreviewActive) SetLayoutPreview(false);
+            world.Build(Campaign.CurrentAct, Campaign.CurrentStep);
+            Player.Teleport(world.SpawnPoint);
+            lanternLight.enabled = Lantern.Lit;
+        }
+
+        private void ToggleLayoutPreview()
+        {
+            if (Campaign == null || Campaign.CurrentAct != TrailAct.Arrival) return;
+            if (layoutPreviewCamera == null)
+            {
+                var previewObject = new GameObject("AshCreek_LayoutPreviewCamera");
+                layoutPreviewCamera = previewObject.AddComponent<Camera>();
+                layoutPreviewCamera.name = "AshCreek_LayoutPreviewCamera";
+                layoutPreviewCamera.orthographic = true;
+                layoutPreviewCamera.orthographicSize = 58f;
+                layoutPreviewCamera.nearClipPlane = .1f;
+                layoutPreviewCamera.farClipPlane = 180f;
+                layoutPreviewCamera.clearFlags = CameraClearFlags.SolidColor;
+                layoutPreviewCamera.backgroundColor = new Color(.026f, .045f, .07f);
+                layoutPreviewCamera.transform.position = new Vector3(0f, 80f, 16f);
+                layoutPreviewCamera.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                layoutPreviewCamera.enabled = false;
+
+                var lightObject = new GameObject("AshCreek_LayoutPreviewLight");
+                lightObject.transform.SetParent(previewObject.transform);
+                lightObject.transform.localRotation = Quaternion.Euler(50f, -30f, 0f);
+                layoutPreviewLight = lightObject.AddComponent<Light>();
+                layoutPreviewLight.type = LightType.Directional;
+                layoutPreviewLight.intensity = 1.35f;
+                layoutPreviewLight.color = new Color(1f, .82f, .66f);
+                layoutPreviewLight.shadows = LightShadows.None;
+                layoutPreviewLight.enabled = false;
+            }
+
+            SetLayoutPreview(!layoutPreviewActive);
+        }
+
+        private void SetLayoutPreview(bool enabled)
+        {
+            if (enabled) layoutPreviewFogWasEnabled = RenderSettings.fog;
+            RenderSettings.fog = enabled ? false : layoutPreviewFogWasEnabled;
+            layoutPreviewActive = enabled;
+            if (layoutPreviewCamera != null) layoutPreviewCamera.enabled = enabled;
+            if (layoutPreviewLight != null) layoutPreviewLight.enabled = enabled;
+            if (Player != null)
+            {
+                Player.enabled = !enabled;
+                if (Player.PlayerCamera != null) Player.PlayerCamera.enabled = !enabled;
+            }
+
+            Cursor.lockState = enabled ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = enabled;
+        }
         private void PlayNarrativeBeat(string completedStep)
         {
             switch (completedStep)
