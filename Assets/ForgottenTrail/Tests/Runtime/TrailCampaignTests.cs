@@ -108,7 +108,7 @@ namespace ForgottenTrail.Tests
             Assert.That(TrailArrivalLayout.IsSaloonStep("meal"), Is.True);
             Assert.That(TrailArrivalLayout.IsSaloonStep("diary"), Is.True);
             Assert.That(groundFloor.y, Is.LessThan(upperFloor.y));
-            Assert.That(TrailArrivalLayout.TargetFor("knife", Vector3.zero).x, Is.EqualTo(-6.35f).Within(.01f));
+            Assert.That(TrailArrivalLayout.TargetFor("knife", Vector3.zero).x, Is.EqualTo(-10.2f).Within(.01f));
         }
 
         [Test]
@@ -116,15 +116,15 @@ namespace ForgottenTrail.Tests
         {
             Assert.That(TrailArrivalLayout.IsChurchStep("priest"), Is.True);
             Assert.That(TrailArrivalLayout.IsStationStep("station_ledger"), Is.True);
-            Assert.That(TrailArrivalLayout.SpawnFor("station", Vector3.zero).x, Is.GreaterThan(TrailArrivalLayout.SpawnFor("enter_church", Vector3.zero).x));
-            Assert.That(TrailArrivalLayout.SpawnFor("station", Vector3.zero).x, Is.GreaterThan(12f));
+            Assert.That(TrailArrivalLayout.SpawnFor("station", Vector3.zero).x, Is.LessThan(TrailArrivalLayout.SpawnFor("enter_church", Vector3.zero).x));
+            Assert.That(TrailArrivalLayout.SpawnFor("station", Vector3.zero).x, Is.LessThan(-4f));
             Assert.That(TrailArrivalLayout.TargetFor("station_ledger", Vector3.zero).y, Is.GreaterThan(3.5f));
         }
 
         [Test]
         public void BackdropBuildingsKeepTheirDesignReferenceButStartOnTheGround()
         {
-            var reference = new Vector3(-16f, 2.8f, 7.5f);
+            var reference = new Vector3(-20f, 2.8f, 8f);
             var anchor = TrailArrivalLayout.GroundAnchor(reference);
 
             Assert.That(anchor.x, Is.EqualTo(reference.x).Within(.001f));
@@ -179,6 +179,7 @@ namespace ForgottenTrail.Tests
                     ? Quaternion.identity
                     : Quaternion.Euler(-90f, 0f, 0f) * child.localRotation;
             }
+            TrailArrivalLayout.ApplyAuthoredArchitectureLayout(instance.transform);
             var saloonFoundation = FindChild(instance.transform, "ARCH_Saloon_Foundation");
             var churchFoundation = FindChild(instance.transform, "ARCH_Church_Foundation");
             var stationFoundation = FindChild(instance.transform, "ARCH_Station_Foundation");
@@ -187,15 +188,15 @@ namespace ForgottenTrail.Tests
             Assert.That(Vector3.Angle(saloonFoundation.up, Vector3.up), Is.LessThan(.01f));
             Assert.That(Vector3.Angle(churchFoundation.up, Vector3.up), Is.LessThan(.01f));
             Assert.That(Vector3.Angle(stationFoundation.up, Vector3.up), Is.LessThan(.01f));
-            Assert.That(saloonFoundation.position.x, Is.EqualTo(-7.6f).Within(.01f));
+            Assert.That(saloonFoundation.position.x, Is.EqualTo(-11f).Within(.01f));
             Assert.That(saloonFoundation.position.y, Is.EqualTo(.16f).Within(.01f));
-            Assert.That(saloonFoundation.position.z, Is.EqualTo(11.75f).Within(.01f));
-            Assert.That(churchFoundation.position.x, Is.EqualTo(7f).Within(.01f));
+            Assert.That(saloonFoundation.position.z, Is.EqualTo(10f).Within(.01f));
+            Assert.That(churchFoundation.position.x, Is.EqualTo(10f).Within(.01f));
             Assert.That(churchFoundation.position.y, Is.EqualTo(.16f).Within(.01f));
-            Assert.That(churchFoundation.position.z, Is.EqualTo(27.5f).Within(.01f));
-            Assert.That(stationFoundation.position.x, Is.EqualTo(0f).Within(.01f));
+            Assert.That(churchFoundation.position.z, Is.EqualTo(24f).Within(.01f));
+            Assert.That(stationFoundation.position.x, Is.EqualTo(-11f).Within(.01f));
             Assert.That(stationFoundation.position.y, Is.EqualTo(.16f).Within(.01f));
-            Assert.That(stationFoundation.position.z, Is.EqualTo(36.25f).Within(.01f));
+            Assert.That(stationFoundation.position.z, Is.EqualTo(28f).Within(.01f));
             Object.DestroyImmediate(instance);
         }
 
@@ -216,12 +217,12 @@ namespace ForgottenTrail.Tests
 
             var expected = new Dictionary<string, Vector3>
             {
-                ["ARCH_BoardingHouse_Pivot"] = new Vector3(-16f, 0f, 7.5f),
-                ["ARCH_Mercantile_Pivot"] = new Vector3(16f, 0f, 11f),
-                ["ARCH_Blacksmith_Pivot"] = new Vector3(-16f, 0f, 26f),
-                ["ARCH_DoctorHouse_Pivot"] = new Vector3(16f, 0f, 32.5f),
-                ["ARCH_NorthCabin_Pivot"] = new Vector3(-13.5f, 0f, 43f),
-                ["ARCH_EastCabin_Pivot"] = new Vector3(14f, 0f, 43f)
+                ["ARCH_BoardingHouse_Pivot"] = new Vector3(-20f, 0f, 8f),
+                ["ARCH_Mercantile_Pivot"] = new Vector3(20f, 0f, 10f),
+                ["ARCH_Blacksmith_Pivot"] = new Vector3(-20f, 0f, 37f),
+                ["ARCH_DoctorHouse_Pivot"] = new Vector3(20f, 0f, 34f),
+                ["ARCH_NorthCabin_Pivot"] = new Vector3(-16f, 0f, 48f),
+                ["ARCH_EastCabin_Pivot"] = new Vector3(18f, 0f, 48f)
             };
 
             foreach (var pair in expected)
@@ -235,8 +236,8 @@ namespace ForgottenTrail.Tests
 
             var stationFoundation = FindChild(instance.transform, "ARCH_Station_Foundation");
             Assert.That(stationFoundation, Is.Not.Null);
-            Assert.That(stationFoundation.position.x, Is.EqualTo(16.5f).Within(.6f));
-            Assert.That(stationFoundation.position.z, Is.EqualTo(22f).Within(.6f));
+            Assert.That(stationFoundation.position.x, Is.EqualTo(-11f).Within(.6f));
+            Assert.That(stationFoundation.position.z, Is.EqualTo(28f).Within(.6f));
             Assert.That(FindChild(instance.transform, "ARCH_Station_LayoutAnchor"), Is.Not.Null);
 
             Object.DestroyImmediate(instance);

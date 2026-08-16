@@ -14,19 +14,32 @@ namespace ForgottenTrail
         // These are world-space landmarks for the authored town composition.
         // Keeping them in one contract prevents the imported GLB, procedural
         // gameplay props and narrative targets from drifting apart.
-        public static readonly Vector3 StationCenter = new Vector3(16.5f, 0f, 22f);
+        public static readonly Vector3 StationCenter = new Vector3(-11f, 0f, 28f);
 
         public static readonly Dictionary<string, Vector3> AuthoredArchitecturePositions = new()
         {
-            ["ARCH_Saloon"] = new Vector3(-7.6f, .16f, 11.75f),
-            ["ARCH_Church"] = new Vector3(7f, .16f, 27.5f),
-            ["ARCH_Station"] = new Vector3(16.5f, .16f, 22f),
-            ["ARCH_BoardingHouse_Pivot"] = new Vector3(-16f, 0f, 7.5f),
-            ["ARCH_Mercantile_Pivot"] = new Vector3(16f, 0f, 11f),
-            ["ARCH_Blacksmith_Pivot"] = new Vector3(-16f, 0f, 26f),
-            ["ARCH_DoctorHouse_Pivot"] = new Vector3(16f, 0f, 32.5f),
-            ["ARCH_NorthCabin_Pivot"] = new Vector3(-13.5f, 0f, 43f),
-            ["ARCH_EastCabin_Pivot"] = new Vector3(14f, 0f, 43f)
+            ["ARCH_Saloon"] = new Vector3(-11f, .16f, 10f),
+            ["ARCH_Church"] = new Vector3(10f, .16f, 24f),
+            ["ARCH_Station"] = new Vector3(-11f, .16f, 28f),
+            ["ARCH_BoardingHouse_Pivot"] = new Vector3(-20f, 0f, 8f),
+            ["ARCH_Mercantile_Pivot"] = new Vector3(20f, 0f, 10f),
+            ["ARCH_Blacksmith_Pivot"] = new Vector3(-20f, 0f, 37f),
+            ["ARCH_DoctorHouse_Pivot"] = new Vector3(20f, 0f, 34f),
+            ["ARCH_NorthCabin_Pivot"] = new Vector3(-16f, 0f, 48f),
+            ["ARCH_EastCabin_Pivot"] = new Vector3(18f, 0f, 48f)
+        };
+
+        public static readonly Dictionary<string, float> AuthoredArchitectureYaw = new()
+        {
+            ["ARCH_Saloon"] = -90f,
+            ["ARCH_Church"] = 90f,
+            ["ARCH_Station"] = -90f,
+            ["ARCH_BoardingHouse_Pivot"] = -90f,
+            ["ARCH_Mercantile_Pivot"] = 90f,
+            ["ARCH_Blacksmith_Pivot"] = -90f,
+            ["ARCH_DoctorHouse_Pivot"] = 90f,
+            ["ARCH_NorthCabin_Pivot"] = -90f,
+            ["ARCH_EastCabin_Pivot"] = 90f
         };
 
         /// <summary>
@@ -47,15 +60,19 @@ namespace ForgottenTrail
             foreach (var pivotName in pivotNames)
             {
                 var pivot = FindChild(architecture, pivotName);
-                if (pivot != null) pivot.position = AuthoredArchitecturePositions[pivotName];
+                if (pivot != null)
+                {
+                    pivot.position = AuthoredArchitecturePositions[pivotName];
+                    pivot.rotation = Quaternion.Euler(0f, AuthoredArchitectureYaw[pivotName], 0f);
+                }
             }
 
-            LayoutDirectBuilding(architecture, "ARCH_Saloon", AuthoredArchitecturePositions["ARCH_Saloon"]);
-            LayoutDirectBuilding(architecture, "ARCH_Church", AuthoredArchitecturePositions["ARCH_Church"]);
-            LayoutDirectBuilding(architecture, "ARCH_Station", AuthoredArchitecturePositions["ARCH_Station"]);
+            LayoutDirectBuilding(architecture, "ARCH_Saloon", AuthoredArchitecturePositions["ARCH_Saloon"], AuthoredArchitectureYaw["ARCH_Saloon"]);
+            LayoutDirectBuilding(architecture, "ARCH_Church", AuthoredArchitecturePositions["ARCH_Church"], AuthoredArchitectureYaw["ARCH_Church"]);
+            LayoutDirectBuilding(architecture, "ARCH_Station", AuthoredArchitecturePositions["ARCH_Station"], AuthoredArchitectureYaw["ARCH_Station"]);
         }
 
-        private static void LayoutDirectBuilding(Transform architecture, string prefix, Vector3 target)
+        private static void LayoutDirectBuilding(Transform architecture, string prefix, Vector3 target, float yaw)
         {
             var parts = new List<Transform>();
             foreach (Transform child in architecture)
@@ -70,6 +87,7 @@ namespace ForgottenTrail
             anchor.position = foundation != null ? foundation.position : parts[0].position;
             foreach (var part in parts) part.SetParent(anchor, true);
             anchor.position = target;
+            anchor.rotation = Quaternion.Euler(0f, yaw, 0f);
         }
 
         private static Transform FindChild(Transform root, string name)
@@ -81,56 +99,56 @@ namespace ForgottenTrail
 
         private static readonly Dictionary<string, Vector3> SpawnPoints = new()
         {
-            ["arrival"] = new Vector3(0f, .05f, -16f),
-            ["footprints"] = new Vector3(0f, .05f, -5.6f),
-            ["threshold"] = new Vector3(0f, .05f, 3.4f),
-            ["enter_saloon"] = new Vector3(-6.1f, .05f, 6.5f),
-            ["meal"] = new Vector3(-8.8f, .05f, 12.3f),
-            ["broken_door"] = new Vector3(-9.7f, .05f, 10.1f),
-            ["diary"] = new Vector3(-7.2f, 3.48f, 12.35f),
-            ["message"] = new Vector3(-3.8f, 3.48f, 13.2f),
-            ["window"] = new Vector3(-2.7f, 3.48f, 13.2f),
-            ["downstairs_noise"] = new Vector3(-6.9f, .05f, 11.2f),
-            ["knife"] = new Vector3(-6.4f, .05f, 12.5f),
-            ["exit_saloon"] = new Vector3(-6.1f, .05f, 7.15f),
-            ["church_approach"] = new Vector3(0f, .05f, 8.8f),
-            ["enter_church"] = new Vector3(6.3f, .05f, 22.0f),
-            ["church_interior"] = new Vector3(6.3f, .05f, 28.2f),
-            ["priest"] = new Vector3(6.3f, .05f, 29.8f),
-            ["station"] = new Vector3(16.5f, .05f, 16.5f),
-            ["station_ledger"] = new Vector3(16.7f, 3.48f, 23.9f),
-            ["station_hale"] = new Vector3(18.9f, .05f, 22.75f),
-            ["station_key"] = new Vector3(18.9f, .05f, 22.75f),
-            ["leave_station"] = new Vector3(16.5f, .05f, 16.5f),
-            ["return_church"] = new Vector3(6.3f, .05f, 21.0f),
-            ["barn"] = new Vector3(0f, .05f, 47.0f)
+            ["arrival"] = new Vector3(0f, .05f, -24f),
+            ["footprints"] = new Vector3(0f, .05f, -7.8f),
+            ["threshold"] = new Vector3(0f, .05f, 1.5f),
+            ["enter_saloon"] = new Vector3(-5.0f, .05f, 10f),
+            ["meal"] = new Vector3(-10.4f, .05f, 10.2f),
+            ["broken_door"] = new Vector3(-8.5f, .05f, 7.8f),
+            ["diary"] = new Vector3(-10.4f, 3.48f, 9.6f),
+            ["message"] = new Vector3(-9.5f, 3.48f, 14.6f),
+            ["window"] = new Vector3(-9.2f, 3.48f, 14.6f),
+            ["downstairs_noise"] = new Vector3(-10.6f, .05f, 10.0f),
+            ["knife"] = new Vector3(-10.2f, .05f, 8.75f),
+            ["exit_saloon"] = new Vector3(-5.0f, .05f, 10f),
+            ["church_approach"] = new Vector3(1.6f, .05f, 24.5f),
+            ["enter_church"] = new Vector3(5.5f, .05f, 24f),
+            ["church_interior"] = new Vector3(10f, .05f, 29f),
+            ["priest"] = new Vector3(10f, .05f, 30.6f),
+            ["station"] = new Vector3(-5.0f, .05f, 28f),
+            ["station_ledger"] = new Vector3(-10.4f, 3.48f, 27.4f),
+            ["station_hale"] = new Vector3(-10.4f, .05f, 30.5f),
+            ["station_key"] = new Vector3(-10.4f, .05f, 30.5f),
+            ["leave_station"] = new Vector3(-5.0f, .05f, 28f),
+            ["return_church"] = new Vector3(5.5f, .05f, 24f),
+            ["barn"] = new Vector3(8f, .05f, 47.0f)
         };
 
         private static readonly Dictionary<string, Vector3> TargetPoints = new()
         {
             ["arrival"] = new Vector3(-1.65f, .8f, -4.35f),
             ["footprints"] = new Vector3(.1f, .08f, -1.2f),
-            ["threshold"] = new Vector3(-3.8f, .08f, 4.8f),
-            ["enter_saloon"] = new Vector3(-6.1f, 1.05f, 7.05f),
-            ["meal"] = new Vector3(-10.2f, .86f, 13.4f),
-            ["broken_door"] = new Vector3(-9.65f, 1.0f, 10.05f),
-            ["diary"] = new Vector3(-7.2f, 4.02f, 12.35f),
-            ["message"] = new Vector3(-3.0f, 4.65f, 13.25f),
-            ["window"] = new Vector3(-1.9f, 4.65f, 13.25f),
-            ["downstairs_noise"] = new Vector3(-7.15f, .68f, 11.35f),
-            ["knife"] = new Vector3(-6.35f, 1.22f, 12.55f),
-            ["exit_saloon"] = new Vector3(-6.1f, 1.05f, 7.05f),
-            ["church_approach"] = new Vector3(5.8f, .08f, 18.2f),
-            ["enter_church"] = new Vector3(6.3f, 1.05f, 21.1f),
-            ["church_interior"] = new Vector3(6.3f, 1.05f, 28.0f),
-            ["priest"] = new Vector3(6.3f, 1.45f, 30.0f),
-            ["station"] = new Vector3(16.5f, 1.05f, 16.2f),
-            ["station_ledger"] = new Vector3(16.7f, 4.02f, 23.9f),
-            ["station_hale"] = new Vector3(18.9f, 1.2f, 22.75f),
-            ["station_key"] = new Vector3(18.9f, 1.2f, 22.75f),
-            ["leave_station"] = new Vector3(16.5f, 1.05f, 16.2f),
-            ["return_church"] = new Vector3(6.3f, 1.05f, 21.1f),
-            ["barn"] = new Vector3(0f, 1.0f, 46.0f)
+            ["threshold"] = new Vector3(.1f, .08f, 2.6f),
+            ["enter_saloon"] = new Vector3(-5.6f, 1.05f, 10f),
+            ["meal"] = new Vector3(-10.2f, .86f, 10.2f),
+            ["broken_door"] = new Vector3(-8.6f, 1.0f, 7.8f),
+            ["diary"] = new Vector3(-10.4f, 4.02f, 9.6f),
+            ["message"] = new Vector3(-9.5f, 4.65f, 14.6f),
+            ["window"] = new Vector3(-9.2f, 4.65f, 14.6f),
+            ["downstairs_noise"] = new Vector3(-10.6f, .68f, 10.0f),
+            ["knife"] = new Vector3(-10.2f, 1.22f, 8.75f),
+            ["exit_saloon"] = new Vector3(-5.6f, 1.05f, 10f),
+            ["church_approach"] = new Vector3(5.5f, .08f, 24f),
+            ["enter_church"] = new Vector3(5.8f, 1.05f, 24f),
+            ["church_interior"] = new Vector3(10f, 1.05f, 29f),
+            ["priest"] = new Vector3(10f, 1.45f, 30.6f),
+            ["station"] = new Vector3(-5.8f, 1.05f, 28f),
+            ["station_ledger"] = new Vector3(-10.4f, 4.02f, 27.4f),
+            ["station_hale"] = new Vector3(-10.4f, 1.2f, 30.5f),
+            ["station_key"] = new Vector3(-10.4f, 1.2f, 30.5f),
+            ["leave_station"] = new Vector3(-5.8f, 1.05f, 28f),
+            ["return_church"] = new Vector3(5.8f, 1.05f, 24f),
+            ["barn"] = new Vector3(8f, 1.0f, 47.0f)
         };
 
         public static Vector3 SpawnFor(string step, Vector3 fallback)

@@ -250,8 +250,8 @@ namespace ForgottenTrail
         private string TargetItem(string step) => step switch { "arrival" => "lantern", "priest" => "deputy_badge", "station_ledger" => "red_ledger", "station_key" => "barn_key", "barn_map" => "ventilation_map", "mine_bell" => "ventilation_bell", "knife" => "knife", _ => null };
         private void CreateMaterials()
         {
-            ground = Material("Ground", new Color(.42f, .25f, .12f), "Art/Textures/Main File V1_1_Ground076L_512x512_Color_Orange", new Vector2(6f, 6f));
-            road = Material("Road", new Color(.21f, .12f, .07f), "Art/Textures/Main File V1_1_Ground076L_512x512_Color_Orange", new Vector2(2f, 18f));
+            ground = Material("Ground", new Color(.17f, .21f, .23f), "Art/Textures/Main File V1_1_Ground076L_512x512_Color_Orange", new Vector2(6f, 6f));
+            road = Material("Road", new Color(.11f, .14f, .15f), "Art/Textures/Main File V1_1_Ground076L_512x512_Color_Orange", new Vector2(2f, 18f));
             wood = Material("Wood", new Color(.23f,.12f,.055f), "Art/Textures/Main File V1_1_Planks023A_512x512_Color", new Vector2(2f, 2f));
             darkWood = Material("DarkWood", new Color(.08f,.045f,.025f), "Art/Textures/Main File V1_1_Planks023A_512x512_Color_Black", new Vector2(2f, 2f));
             brick = Material("Brick", new Color(.22f,.075f,.045f), "Art/Textures/Main File V1_1_Bricks096_512x512_Color", new Vector2(2f, 2f));
@@ -298,16 +298,16 @@ namespace ForgottenTrail
         {
             var arrival = act == TrailAct.Arrival;
             RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogStartDistance = arrival ? 8f : 12f;
-            RenderSettings.fogEndDistance = arrival ? 52f : 46f;
-            RenderSettings.fogColor = new Color(.055f, .085f, .12f);
-            RenderSettings.ambientLight = new Color(.27f, .33f, .43f);
+            RenderSettings.fogStartDistance = arrival ? 5f : 12f;
+            RenderSettings.fogEndDistance = arrival ? 42f : 46f;
+            RenderSettings.fogColor = new Color(.085f, .13f, .18f);
+            RenderSettings.ambientLight = new Color(.33f, .39f, .50f);
             RenderSettings.reflectionIntensity = .45f; RenderSettings.skybox = null;
             var mainCamera = Camera.main;
             if (mainCamera != null)
             {
                 mainCamera.clearFlags = CameraClearFlags.SolidColor;
-                mainCamera.backgroundColor = new Color(.018f, .03f, .05f);
+                mainCamera.backgroundColor = new Color(.026f, .045f, .07f);
                 mainCamera.farClipPlane = 110f;
             }
             if (moonlight == null)

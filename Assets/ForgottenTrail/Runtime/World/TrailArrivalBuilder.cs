@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ForgottenTrail
@@ -72,9 +73,19 @@ namespace ForgottenTrail
             BuildGateAndApproach();
             BuildStreetFurniture();
             BuildReferenceCompositionDressing();
+            var saloonStart = root.childCount;
             BuildSaloon(step);
+            ReorientGeneratedBuilding(saloonStart, "SaloonGameplayLayout", new Vector3(-7.6f, 0f, 11.75f),
+                new Vector3(-11f, 0f, 10f), -90f);
+            var churchStart = root.childCount;
             BuildChurch(step);
+            ReorientGeneratedBuilding(churchStart, "ChurchGameplayLayout", new Vector3(7f, 0f, 27.5f),
+                new Vector3(10f, 0f, 24f), 90f);
+            var stationStart = root.childCount;
             BuildStation(step);
+            ReorientGeneratedBuilding(stationStart, "StationGameplayLayout", TrailArrivalLayout.StationCenter,
+                TrailArrivalLayout.StationCenter, -90f);
+            BuildDistantLandmarks();
             HideProceduralArchitectureMeshes();
             BuildImportedArchitecture();
             BuildImportedTrees();
@@ -95,24 +106,16 @@ namespace ForgottenTrail
             var architecture = Object.Instantiate(prefab, root);
             architecture.name = "AshCreek_RealisticArchitecture_Blender";
             architecture.transform.localPosition = Vector3.zero;
-            // The authored Blender file uses Y as its construction height and
-            // the GLB importer stores that authored axis as the local Z axis.
-            // Keep the root conversion so positions land on the Ash Creek
-            // street, then compensate each direct mesh node so it stays upright.
+            // glTFast imports this authored Blender file with the handedness and
+            // axis conversion still represented on the scene root: imported
+            // (x, y, z) is (-x, z, -y). Convert that root once to Unity space.
+            // Mesh children must keep their authored local rotations; rotating
+            // them individually is what turns the walls into vertical slabs.
             architecture.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             architecture.transform.localScale = new Vector3(-1f, 1f, 1f);
 
-            // The old showcase pivots made the backdrop read as leaning
-            // buildings from first person. They are still useful for their
-            // authored positions, but all backdrop pivots are street-aligned.
-            foreach (Transform child in architecture.transform)
-            {
-                child.localRotation = child.name.EndsWith("_Pivot")
-                    ? Quaternion.identity
-                    : Quaternion.Euler(-90f, 0f, 0f) * child.localRotation;
-            }
-
             TrailArrivalLayout.ApplyAuthoredArchitectureLayout(architecture.transform);
+            RepairImportedArchitectureMaterials(architecture);
         }
 
         private void BuildImportedTrees()
@@ -174,12 +177,14 @@ namespace ForgottenTrail
                     };
                     if (source != null)
                     {
-                        var albedo = source.GetTexture("_BaseMap") ?? source.GetTexture("_MainTex");
+                        var sourceTextureProperty = source.HasProperty("_BaseMap") ? "_BaseMap" :
+                            source.HasProperty("_MainTex") ? "_MainTex" : null;
+                        var albedo = string.IsNullOrEmpty(sourceTextureProperty) ? null : source.GetTexture(sourceTextureProperty);
                         var textureProperty = repaired.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
                         if (albedo != null && repaired.HasProperty(textureProperty))
                         {
                             repaired.SetTexture(textureProperty, albedo);
-                            repaired.SetTextureScale(textureProperty, source.GetTextureScale(source.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex"));
+                            repaired.SetTextureScale(textureProperty, source.GetTextureScale(sourceTextureProperty));
                         }
                         if (source.HasProperty("_BumpMap") && repaired.HasProperty("_BumpMap"))
                         {
@@ -208,6 +213,67 @@ namespace ForgottenTrail
                 }
                 renderer.sharedMaterials = repairedMaterials;
             }
+        }
+
+        private void RepairImportedArchitectureMaterials(GameObject architecture)
+        {
+            var shader = Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null) return;
+
+            foreach (var renderer in architecture.GetComponentsInChildren<Renderer>(true))
+            {
+                var sourceMaterials = renderer.sharedMaterials;
+                var repairedMaterials = new Material[sourceMaterials.Length];
+                for (var i = 0; i < sourceMaterials.Length; i++)
+                {
+                    var source = sourceMaterials[i];
+                    var name = source != null ? source.name : string.Empty;
+                    // Preserve the imported shader. The GLB was authored with the
+                    // project's active render pipeline; replacing it with a
+                    // guessed shader makes the whole town magenta on some Unity
+                    // editor configurations.
+                    var repaired = source != null ? new Material(source) : new Material(shader);
+                    repaired.name = "AshCreek_Architecture_" + name;
+                    if (source != null)
+                    {
+                        var sourceTextureProperty = source.HasProperty("_BaseMap") ? "_BaseMap" :
+                            source.HasProperty("_MainTex") ? "_MainTex" : null;
+                        var textureProperty = repaired.HasProperty("_BaseMap") ? "_BaseMap" : "_MainTex";
+                        if (!string.IsNullOrEmpty(sourceTextureProperty) && source.GetTexture(sourceTextureProperty) != null)
+                        {
+                            repaired.SetTexture(textureProperty, source.GetTexture(sourceTextureProperty));
+                            repaired.SetTextureScale(textureProperty, source.GetTextureScale(sourceTextureProperty));
+                        }
+                    }
+
+                    var tint = ArchitectureMaterialTint(name);
+                    var colorProperty = repaired.HasProperty("_BaseColor") ? "_BaseColor" : "_Color";
+                    if (repaired.HasProperty(colorProperty)) repaired.SetColor(colorProperty, tint);
+                    if (repaired.HasProperty("_Smoothness")) repaired.SetFloat("_Smoothness", .18f);
+                    if (repaired.HasProperty("_Metallic")) repaired.SetFloat("_Metallic", name.Contains("Iron") ? .55f : .04f);
+                    if (name.Contains("SmokyWindow") && repaired.HasProperty("_EmissionColor"))
+                    {
+                        repaired.EnableKeyword("_EMISSION");
+                        repaired.SetColor("_EmissionColor", new Color(.12f, .025f, .008f));
+                    }
+                    repairedMaterials[i] = repaired;
+                }
+                renderer.sharedMaterials = repairedMaterials;
+            }
+        }
+
+        private static Color ArchitectureMaterialTint(string name)
+        {
+            if (name.Contains("DarkWood")) return new Color(.12f, .065f, .035f, 1f);
+            if (name.Contains("WoodBoards")) return new Color(.30f, .14f, .065f, 1f);
+            if (name.Contains("Brick")) return new Color(.30f, .13f, .085f, 1f);
+            if (name.Contains("AgedPlaster")) return new Color(.26f, .28f, .27f, 1f);
+            if (name.Contains("TarredRoof")) return new Color(.035f, .045f, .055f, 1f);
+            if (name.Contains("Trim")) return new Color(.26f, .12f, .045f, 1f);
+            if (name.Contains("CutStone")) return new Color(.22f, .24f, .24f, 1f);
+            if (name.Contains("Iron")) return new Color(.07f, .08f, .085f, 1f);
+            if (name.Contains("SmokyWindow")) return new Color(.018f, .028f, .03f, 1f);
+            return new Color(.20f, .22f, .22f, 1f);
         }
 
         private void BuildAssetStoreTerrainBackdrop()
@@ -286,7 +352,7 @@ namespace ForgottenTrail
             {
                 var t = i / (float)segments;
                 var z = -20f + t * 72f;
-                var center = Mathf.Sin(t * 1.35f) * .32f;
+                var center = Mathf.Sin(t * 1.15f) * .90f + Mathf.Sin(t * 3.1f) * .14f;
                 var width = 7.15f + Mathf.Sin(t * 2.1f) * .25f;
                 vertices[i * 2] = new Vector3(center - width * .5f, .045f + Mathf.Sin(t * 7f) * .008f, z);
                 vertices[i * 2 + 1] = new Vector3(center + width * .5f, .045f + Mathf.Cos(t * 6f) * .008f, z);
@@ -320,11 +386,29 @@ namespace ForgottenTrail
                 Box("RoadStone", new Vector3(side * (3.8f + (i % 3) * .5f), .09f, z), new Vector3(.18f, .08f, .42f), stone, false)
                     .transform.Rotate(0f, i * 23f, i * 11f);
             }
+
+            var puddleMaterial = new Material(road) { name = "AshCreek_RoadPuddles" };
+            if (puddleMaterial.HasProperty("_BaseColor")) puddleMaterial.SetColor("_BaseColor", new Color(.035f, .075f, .095f, 1f));
+            if (puddleMaterial.HasProperty("_Color")) puddleMaterial.SetColor("_Color", new Color(.035f, .075f, .095f, 1f));
+            if (puddleMaterial.HasProperty("_Smoothness")) puddleMaterial.SetFloat("_Smoothness", .82f);
+            var puddles = new[]
+            {
+                new Vector3(-1.9f, .075f, -11.5f), new Vector3(2.35f, .078f, -3.0f),
+                new Vector3(-2.55f, .078f, 5.8f), new Vector3(1.75f, .079f, 16.7f),
+                new Vector3(-2.1f, .078f, 27.4f), new Vector3(2.65f, .079f, 39.8f)
+            };
+            for (var i = 0; i < puddles.Length; i++)
+            {
+                var puddle = Part("RoadPuddle", PrimitiveType.Sphere, root, puddles[i],
+                    new Vector3(.95f + (i % 2) * .45f, .025f, .42f + (i % 3) * .16f), puddleMaterial,
+                    Quaternion.Euler(0f, i * 31f, 0f), false);
+                puddle.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
         }
 
         private void BuildGateAndApproach()
         {
-            var gateZ = -4.5f;
+            var gateZ = -6.5f;
             Box("GatePostLeft", new Vector3(-4.25f, 2.2f, gateZ), new Vector3(.56f, 4.4f, .56f), trim);
             Box("GatePostRight", new Vector3(4.25f, 2.2f, gateZ), new Vector3(.56f, 4.4f, .56f), trim);
             Box("GateBeam", new Vector3(0f, 4.1f, gateZ), new Vector3(9.1f, .48f, .56f), darkWood);
@@ -346,6 +430,19 @@ namespace ForgottenTrail
             }
         }
 
+        private void ReorientGeneratedBuilding(int startIndex, string name, Vector3 sourceCenter, Vector3 targetCenter, float yaw)
+        {
+            var generated = new List<Transform>();
+            for (var i = startIndex; i < root.childCount; i++) generated.Add(root.GetChild(i));
+            if (generated.Count == 0) return;
+
+            var layout = new GameObject(name).transform;
+            layout.SetParent(root, true);
+            layout.SetPositionAndRotation(sourceCenter, Quaternion.identity);
+            foreach (var child in generated) child.SetParent(layout, true);
+            layout.SetPositionAndRotation(targetCenter, Quaternion.Euler(0f, yaw, 0f));
+        }
+
         private void BuildBackdropBuildings()
         {
             FrontierShell("BoardingHouse", new Vector3(-16f, 2.8f, 7.5f), 7.5f, 6.4f, plaster, roof, true);
@@ -360,14 +457,14 @@ namespace ForgottenTrail
         {
             // The well sits just off the road center, matching the reference
             // composition without blocking the arrival path.
-            BuildWell(new Vector3(2.2f, .05f, 4.0f));
-            BuildWagon(new Vector3(4.6f, .04f, 12.0f), 12f);
-            BuildWagon(new Vector3(-14.2f, .04f, 20.0f), -20f);
-            BuildFence(new Vector3(-17f, .02f, 17f), 8f, 3);
-            BuildFence(new Vector3(16f, .02f, 22f), 7f, 3);
-            CreateCactus(new Vector3(-18f, .05f, -1f), 1.2f);
-            CreateCactus(new Vector3(18f, .05f, 4f), .9f);
-            CreateCactus(new Vector3(-18f, .05f, 34f), 1.35f);
+            BuildWell(new Vector3(5.0f, .05f, 10.0f));
+            BuildWagon(new Vector3(3.8f, .04f, 16.0f), 12f);
+            BuildWagon(new Vector3(-3.8f, .04f, 34.0f), -20f);
+            BuildFence(new Vector3(-19f, .02f, 17f), 9f, 3);
+            BuildFence(new Vector3(18f, .02f, 19f), 9f, 3);
+            CreateCactus(new Vector3(-20f, .05f, -3f), 1.2f);
+            CreateCactus(new Vector3(20f, .05f, 5f), .9f);
+            CreateCactus(new Vector3(-20f, .05f, 38f), 1.35f);
         }
 
         private void BuildReferenceCompositionDressing()
@@ -375,7 +472,7 @@ namespace ForgottenTrail
             // Keep the main avenue visually open while giving the town a lived-in
             // western outline: a few loose boards, a signpost and a warm church
             // glow are more useful here than another row of primitive buildings.
-            var signpost = Box("TownDirectionPost", new Vector3(-4.4f, 1.15f, 18.4f),
+            var signpost = Box("TownDirectionPost", new Vector3(3.2f, 1.15f, 18.4f),
                 new Vector3(.16f, 2.3f, .16f), darkWood, false);
             Box("TownDirectionBoard", signpost.transform.position + new Vector3(0f, .52f, -.02f),
                 new Vector3(1.65f, .28f, .10f), trim, false)
@@ -397,8 +494,39 @@ namespace ForgottenTrail
                 plank.transform.Rotate(i * 17f, i * 29f, (i % 2 == 0 ? -8f : 11f));
             }
 
-            CreatePracticalLight("ChurchExteriorGlow", new Vector3(7.0f, 2.5f, 20.7f),
+            CreatePracticalLight("ChurchExteriorGlow", new Vector3(5.6f, 2.5f, 24.0f),
                 new Color(1f, .42f, .14f), 7.5f, .8f);
+        }
+
+        private void BuildDistantLandmarks()
+        {
+            // The town plan keeps the barn and cemetery readable beyond the
+            // church, exactly where the next chapter is foreshadowed.
+            FrontierShell("ArrivalBarn", new Vector3(8f, 0f, 50f), 13f, 6.4f, darkWood, roof, false);
+            Box("ArrivalBarnDoor", new Vector3(8f, 1.95f, 46.98f), new Vector3(5.2f, 3.7f, .16f), darkWood, false);
+            Box("ArrivalBarnDoorBeam", new Vector3(8f, 3.9f, 46.84f), new Vector3(5.6f, .18f, .22f), trim, false);
+            Text("BARN", new Vector3(8f, 4.2f, 46.78f), 24, new Color(.64f, .42f, .20f), Quaternion.Euler(0f, 180f, 0f));
+            CreatePracticalLight("BarnDistantGlow", new Vector3(8f, 2.5f, 47.1f), new Color(1f, .34f, .11f), 5.5f, .8f);
+
+            const float cemeteryLeft = 5.8f;
+            const float cemeteryRight = 14.2f;
+            const float cemeteryFront = 35.8f;
+            const float cemeteryBack = 40.8f;
+            for (var i = 0; i < 5; i++)
+            {
+                var x = cemeteryLeft + i * (cemeteryRight - cemeteryLeft) / 4f;
+                Box("CemeteryFenceFront", new Vector3(x, .7f, cemeteryFront), new Vector3(.16f, 1.4f, .16f), rust, false);
+                Box("CemeteryFenceBack", new Vector3(x, .7f, cemeteryBack), new Vector3(.16f, 1.4f, .16f), rust, false);
+            }
+            Box("CemeteryFenceRailFront", new Vector3(10f, 1.0f, cemeteryFront), new Vector3(8.5f, .14f, .14f), rust, false);
+            Box("CemeteryFenceRailBack", new Vector3(10f, 1.0f, cemeteryBack), new Vector3(8.5f, .14f, .14f), rust, false);
+            for (var row = 0; row < 2; row++)
+                for (var col = 0; col < 4; col++)
+                {
+                    var grave = Box("CemeteryGrave", new Vector3(7.0f + col * 2.0f, .48f, 37.2f + row * 2.0f),
+                        new Vector3(.42f, .82f, .16f), stone, false);
+                    grave.transform.Rotate(0f, col % 2 == 0 ? -8f : 7f, 0f);
+                }
         }
 
         private void BuildSaloon(string step)
@@ -701,7 +829,7 @@ namespace ForgottenTrail
             if (step is "church_approach" or "enter_church")
             {
                 for (var i = 0; i < 7; i++)
-                    Box("TracksToChurch", new Vector3(5.65f + Mathf.Sin(i) * .28f, .11f, 17.0f + i * .6f), new Vector3(.15f, .018f, .36f), darkWood, false)
+                    Box("TracksToChurch", new Vector3(1.1f + i * .68f, .11f, 24.2f + Mathf.Sin(i * .8f) * .32f), new Vector3(.15f, .018f, .36f), darkWood, false)
                         .transform.Rotate(0f, i % 2 == 0 ? -18f : 18f, 0f);
             }
         }
@@ -940,8 +1068,8 @@ namespace ForgottenTrail
                 material.SetTexture("_BumpMap", normal);
                 material.SetFloat("_BumpScale", .65f);
             }
-            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", new Color(.48f, .31f, .17f, 1f));
-            if (material.HasProperty("_Color")) material.SetColor("_Color", new Color(.48f, .31f, .17f, 1f));
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", new Color(.22f, .25f, .25f, 1f));
+            if (material.HasProperty("_Color")) material.SetColor("_Color", new Color(.22f, .25f, .25f, 1f));
             if (material.HasProperty("_BaseMap")) material.SetTextureScale("_BaseMap", new Vector2(1.35f, 8f));
             if (material.HasProperty("_MainTex")) material.SetTextureScale("_MainTex", new Vector2(1.35f, 8f));
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", .12f);
