@@ -140,23 +140,43 @@ namespace ForgottenTrail
         {
             switch (completedStep)
             {
+                case "meal":
+                    // The upper-floor moan is the first sound that makes the
+                    // player commit to the staircase.
+                    Audio.PlayDelayed("creak", .32f);
+                    UI.Toast("Um gemido vem do andar de cima. Não parece humano.");
+                    break;
+                case "broken_door":
+                    Audio.PlayCue("creak");
+                    UI.Toast("A madeira range. A passagem para o andar de cima está aberta.");
+                    break;
                 case "diary":
                     Audio.PlayCue("heartbeat");
+                    UI.Toast("Os batimentos aumentam. Alguma coisa observa a janela.");
                     world.PlayWindowWatcherBeat();
                     break;
                 case "message":
                     Audio.PlayCue("heartbeat");
+                    UI.Toast("O aviso confirma: eles escutam tudo.");
                     world.PlayWindowWatcherBeat();
                     break;
                 case "window":
                     Audio.PlayCue("impact");
                     Audio.PlayDelayed("creak", .22f);
+                    UI.Toast("Alguma coisa quebrou no andar de baixo.");
                     break;
                 case "downstairs_noise":
-                    Audio.PlayCue("creak");
+                    Audio.PlayCue("impact");
+                    Audio.PlayDelayed("creak", .18f);
+                    UI.Toast("As pegadas recentes seguem para a porta.");
+                    break;
+                case "knife":
+                    Audio.PlayCue("evidence");
+                    UI.Toast("A faca está disponível como defesa emergencial.");
                     break;
                 case "exit_saloon":
                     Audio.PlayDelayed("church_bell", .35f);
+                    UI.Toast("O sino da igreja toca uma única vez.");
                     break;
                 case "priest":
                     Audio.PlayCue("heartbeat");

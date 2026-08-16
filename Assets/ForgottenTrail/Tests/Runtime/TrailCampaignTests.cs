@@ -109,6 +109,28 @@ namespace ForgottenTrail.Tests
             Assert.That(TrailArrivalLayout.IsSaloonStep("diary"), Is.True);
             Assert.That(groundFloor.y, Is.LessThan(upperFloor.y));
             Assert.That(TrailArrivalLayout.TargetFor("knife", Vector3.zero).x, Is.EqualTo(-10.2f).Within(.01f));
+            Assert.That(TrailArrivalLayout.SaloonYaw, Is.EqualTo(90f).Within(.01f));
+        }
+
+        [Test]
+        public void SaloonSequenceKeepsTheStoryOrderFromEntryToExit()
+        {
+            var campaign = new TrailCampaign();
+            campaign.Report("intro_finished");
+            campaign.Report("footprints_found");
+            campaign.Report("threshold_checked");
+
+            var saloonEvents = new[]
+            {
+                "saloon_entered", "meal_inspected", "door_inspected", "diary_inspected",
+                "message_inspected", "window_inspected", "downstairs_noise_checked",
+                "knife_collected", "saloon_exited"
+            };
+            foreach (var eventId in saloonEvents) Assert.That(campaign.Report(eventId), Is.True, eventId);
+
+            Assert.That(campaign.CurrentStep, Is.EqualTo("church_approach"));
+            Assert.That(campaign.HasReached("knife"), Is.True);
+            Assert.That(campaign.HasReached("exit_saloon"), Is.True);
         }
 
         [Test]

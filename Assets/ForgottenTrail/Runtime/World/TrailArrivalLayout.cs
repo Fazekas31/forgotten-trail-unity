@@ -28,7 +28,9 @@ namespace ForgottenTrail
         public static readonly Vector3 GeneratedSaloonOrigin = new Vector3(-7.6f, 0f, 11.75f);
         public static readonly Vector3 GeneratedChurchOrigin = new Vector3(7f, 0f, 27.5f);
 
-        public const float SaloonYaw = -90f;
+        // The saloon front faces the central avenue on the east side, matching
+        // the authored map and the player's entrance/exit route.
+        public const float SaloonYaw = 90f;
         public const float ChurchYaw = 90f;
         public const float StationYaw = -90f;
         public const float BarnYaw = 0f;

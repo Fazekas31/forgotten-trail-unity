@@ -586,7 +586,7 @@ namespace ForgottenTrail
             CreatePracticalLight("SaloonUpperLamp", new Vector3(-6.8f, 5.8f, 12.4f), new Color(1f, .30f, .10f), 7.5f, 2.2f);
 
             BuildSaloonGroundProps(step);
-            BuildStairCase();
+            BuildStairCase(step);
             BuildSaloonUpperProps(step);
         }
 
@@ -599,7 +599,9 @@ namespace ForgottenTrail
             BuildBottleLine(new Vector3(-3.75f, 1.0f, 14.9f), 5);
             BuildBloodTrail(new Vector3(-8.7f, .14f, 12.8f), 4);
             if (step is "downstairs_noise" or "knife" or "exit_saloon") BuildCrashDebris();
-            BuildKnife(new Vector3(-6.35f, 1.12f, 12.55f), step is "knife" or "exit_saloon");
+            // The knife is revealed by the crash and disappears immediately
+            // after collection; the held weapon is owned by the player.
+            BuildKnife(new Vector3(-6.35f, 1.12f, 12.55f), step == "knife");
         }
 
         private void BuildSaloonUpperProps(string step)
@@ -665,15 +667,28 @@ namespace ForgottenTrail
                 .transform.Rotate(20f, 0f, 74f);
         }
 
-        private void BuildStairCase()
+        private void BuildStairCase(string step)
         {
             for (var i = 0; i < 8; i++)
                 Box("Stair", new Vector3(-9.85f, .25f + i * .38f, 9.1f + i * .42f), new Vector3(2.0f, .30f, .55f), wood, true);
-            Box("DamagedStairDoor", new Vector3(-9.7f, 1.45f, 10.1f), new Vector3(1.9f, 2.35f, .13f), darkWood, false)
-                .transform.Rotate(0f, 0f, -12f);
-            for (var i = 0; i < 5; i++)
-                Box("BrokenDoorSlat", new Vector3(-9.7f + (i - 2) * .35f, 1.45f, 10.0f), new Vector3(.08f, 2.1f, .24f), trim, false)
-                    .transform.Rotate(0f, 0f, -18f + i * 9f);
+            var passageBlocked = step is "enter_saloon" or "meal" or "broken_door";
+            if (passageBlocked)
+            {
+                Box("DamagedStairDoor", new Vector3(-9.7f, 1.45f, 10.1f), new Vector3(1.9f, 2.35f, .13f), darkWood, false)
+                    .transform.Rotate(0f, 0f, -12f);
+                for (var i = 0; i < 5; i++)
+                    Box("BrokenDoorSlat", new Vector3(-9.7f + (i - 2) * .35f, 1.45f, 10.0f), new Vector3(.08f, 2.1f, .24f), trim, false)
+                        .transform.Rotate(0f, 0f, -18f + i * 9f);
+            }
+            else
+            {
+                // The opened passage remains readable after the automatic climb
+                // to the upper floor without leaving a solid visual blocker.
+                Box("OpenStairFrameLeft", new Vector3(-10.7f, 1.25f, 10.05f), new Vector3(.10f, 2.0f, .18f), trim, false)
+                    .transform.Rotate(0f, 0f, -12f);
+                Box("OpenStairFrameRight", new Vector3(-8.7f, 1.25f, 10.05f), new Vector3(.10f, 2.0f, .18f), trim, false)
+                    .transform.Rotate(0f, 0f, -12f);
+            }
         }
 
         private void BuildCrashDebris()
