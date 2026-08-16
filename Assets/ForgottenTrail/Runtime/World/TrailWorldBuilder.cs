@@ -296,12 +296,18 @@ namespace ForgottenTrail
         }
         private void ConfigureAtmosphere(TrailAct act)
         {
-            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 12f; RenderSettings.fogEndDistance = act == TrailAct.Arrival ? 64f : 46f; RenderSettings.fogColor = new Color(.012f,.022f,.048f); RenderSettings.ambientLight = new Color(.34f,.39f,.52f); RenderSettings.reflectionIntensity = .45f; RenderSettings.skybox = null;
+            var arrival = act == TrailAct.Arrival;
+            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogStartDistance = arrival ? 8f : 12f;
+            RenderSettings.fogEndDistance = arrival ? 52f : 46f;
+            RenderSettings.fogColor = new Color(.055f, .085f, .12f);
+            RenderSettings.ambientLight = new Color(.27f, .33f, .43f);
+            RenderSettings.reflectionIntensity = .45f; RenderSettings.skybox = null;
             var mainCamera = Camera.main;
             if (mainCamera != null)
             {
                 mainCamera.clearFlags = CameraClearFlags.SolidColor;
-                mainCamera.backgroundColor = new Color(.005f,.012f,.03f);
+                mainCamera.backgroundColor = new Color(.018f, .03f, .05f);
                 mainCamera.farClipPlane = 110f;
             }
             if (moonlight == null)

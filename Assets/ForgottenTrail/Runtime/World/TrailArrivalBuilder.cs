@@ -70,7 +70,6 @@ namespace ForgottenTrail
             BuildAssetStoreTerrainBackdrop();
             BuildArrivalRoad();
             BuildGateAndApproach();
-            BuildBackdropBuildings();
             BuildStreetFurniture();
             BuildReferenceCompositionDressing();
             BuildSaloon(step);
@@ -89,6 +88,7 @@ namespace ForgottenTrail
             if (prefab == null)
             {
                 Debug.LogWarning("Ash Creek architecture GLB was not imported. Falling back to the procedural shells.");
+                BuildBackdropBuildings();
                 return;
             }
 
@@ -111,6 +111,8 @@ namespace ForgottenTrail
                     ? Quaternion.identity
                     : Quaternion.Euler(-90f, 0f, 0f) * child.localRotation;
             }
+
+            TrailArrivalLayout.ApplyAuthoredArchitectureLayout(architecture.transform);
         }
 
         private void BuildImportedTrees()
@@ -121,13 +123,22 @@ namespace ForgottenTrail
                 Resources.Load<GameObject>("Environment/AssetStoreTrees/Pine_B"),
                 Resources.Load<GameObject>("Environment/AssetStoreTrees/Cypress_Forest_Desktop")
             };
+            // The reference keeps the central avenue readable and uses a dense
+            // conifer wall around the town perimeter. All positions stay well
+            // outside the playable road and building footprints.
             var positions = new[]
             {
-                new Vector3(-22f, 0f, -8f), new Vector3(22f, 0f, -6f),
-                new Vector3(-22f, 0f, 6f), new Vector3(22f, 0f, 10f),
-                new Vector3(-23f, 0f, 23f), new Vector3(23f, 0f, 27f),
-                new Vector3(-18f, 0f, 45f), new Vector3(19f, 0f, 46f),
-                new Vector3(-29f, 0f, 16f), new Vector3(29f, 0f, 20f)
+                new Vector3(-24f, 0f, -13f), new Vector3(24f, 0f, -13f),
+                new Vector3(-29f, 0f, -5f), new Vector3(29f, 0f, -4f),
+                new Vector3(-27f, 0f, 6f), new Vector3(28f, 0f, 8f),
+                new Vector3(-29f, 0f, 18f), new Vector3(30f, 0f, 20f),
+                new Vector3(-28f, 0f, 31f), new Vector3(30f, 0f, 33f),
+                new Vector3(-26f, 0f, 44f), new Vector3(28f, 0f, 46f),
+                new Vector3(-21f, 0f, 56f), new Vector3(22f, 0f, 58f),
+                new Vector3(-35f, 0f, 2f), new Vector3(35f, 0f, 6f),
+                new Vector3(-36f, 0f, 14f), new Vector3(36f, 0f, 18f),
+                new Vector3(-36f, 0f, 27f), new Vector3(36f, 0f, 31f),
+                new Vector3(-34f, 0f, 41f), new Vector3(34f, 0f, 45f)
             };
 
             for (var i = 0; i < positions.Length; i++)
@@ -610,52 +621,49 @@ namespace ForgottenTrail
 
         private void BuildStation(string step)
         {
-            const float left = -5.2f;
-            const float right = 5.2f;
-            const float front = 31.0f;
-            const float back = 41.5f;
-            Box("StationFloor", new Vector3(0f, .06f, 36.25f), new Vector3(10.4f, .12f, 10.7f), wood);
-            Box("StationWallLeft", new Vector3(left, 1.65f, 36.25f), new Vector3(.3f, 3.2f, 10.7f), darkWood);
-            Box("StationWallRight", new Vector3(right, 1.65f, 36.25f), new Vector3(.3f, 3.2f, 10.7f), darkWood);
-            Box("StationWallBack", new Vector3(0f, 1.65f, back), new Vector3(10.4f, 3.2f, .3f), darkWood);
-            Box("StationFrontLeft", new Vector3(-2.8f, 1.65f, front), new Vector3(4.8f, 3.2f, .3f), darkWood);
-            Box("StationFrontRight", new Vector3(3.2f, 1.65f, front), new Vector3(4.0f, 3.2f, .3f), darkWood);
-            Box("StationLintel", new Vector3(.2f, 2.9f, front), new Vector3(2.2f, .45f, .35f), trim);
-            Box("StationUpperFloor", new Vector3(0f, 3.27f, 36.25f), new Vector3(10.2f, .18f, 10.5f), darkWood);
-            Box("StationUpperLeft", new Vector3(left, 4.8f, 36.25f), new Vector3(.3f, 3.0f, 10.7f), darkWood);
-            Box("StationUpperRight", new Vector3(right, 4.8f, 36.25f), new Vector3(.3f, 3.0f, 10.7f), darkWood);
-            Box("StationUpperBack", new Vector3(0f, 4.8f, back), new Vector3(10.4f, 3.0f, .3f), darkWood);
-            BuildRoof("StationRoof", new Vector3(0f, 7.94f, 36.25f), 11.4f, 11.7f, 29f);
-            BuildDoubleDoor(new Vector3(.2f, 1.25f, 30.8f));
-            Window(new Vector3(-3.8f, 1.7f, 30.8f), 1.35f, 1.5f, false, glass);
-            Window(new Vector3(3.8f, 1.7f, 30.8f), 1.35f, 1.5f, false, glass);
-            Box("StationSign", new Vector3(.2f, 4.0f, 30.5f), new Vector3(3.6f, .9f, .16f), darkWood, false);
-            Text("SHERIFF", new Vector3(.2f, 3.93f, 30.39f), 30, new Color(.78f, .53f, .25f), Quaternion.Euler(0f, 180f, 0f));
-            BuildStationInterior(step);
+            var center = TrailArrivalLayout.StationCenter;
+            Box("StationFloor", StationPoint(center, 0f, .06f, 0f), new Vector3(10.4f, .12f, 10.7f), wood);
+            Box("StationWallLeft", StationPoint(center, -5.2f, 1.65f, 0f), new Vector3(.3f, 3.2f, 10.7f), darkWood);
+            Box("StationWallRight", StationPoint(center, 5.2f, 1.65f, 0f), new Vector3(.3f, 3.2f, 10.7f), darkWood);
+            Box("StationWallBack", StationPoint(center, 0f, 1.65f, 5.25f), new Vector3(10.4f, 3.2f, .3f), darkWood);
+            Box("StationFrontLeft", StationPoint(center, -2.8f, 1.65f, -5.25f), new Vector3(4.8f, 3.2f, .3f), darkWood);
+            Box("StationFrontRight", StationPoint(center, 3.2f, 1.65f, -5.25f), new Vector3(4.0f, 3.2f, .3f), darkWood);
+            Box("StationLintel", StationPoint(center, .2f, 2.9f, -5.25f), new Vector3(2.2f, .45f, .35f), trim);
+            Box("StationUpperFloor", StationPoint(center, 0f, 3.27f, 0f), new Vector3(10.2f, .18f, 10.5f), darkWood);
+            Box("StationUpperLeft", StationPoint(center, -5.2f, 4.8f, 0f), new Vector3(.3f, 3.0f, 10.7f), darkWood);
+            Box("StationUpperRight", StationPoint(center, 5.2f, 4.8f, 0f), new Vector3(.3f, 3.0f, 10.7f), darkWood);
+            Box("StationUpperBack", StationPoint(center, 0f, 4.8f, 5.25f), new Vector3(10.4f, 3.0f, .3f), darkWood);
+            BuildRoof("StationRoof", StationPoint(center, 0f, 7.94f, 0f), 11.4f, 11.7f, 29f);
+            BuildDoubleDoor(StationPoint(center, .2f, 1.25f, -5.45f));
+            Window(StationPoint(center, -3.8f, 1.7f, -5.45f), 1.35f, 1.5f, false, glass);
+            Window(StationPoint(center, 3.8f, 1.7f, -5.45f), 1.35f, 1.5f, false, glass);
+            Box("StationSign", StationPoint(center, .2f, 4.0f, -5.75f), new Vector3(3.6f, .9f, .16f), darkWood, false);
+            Text("SHERIFF", StationPoint(center, .2f, 3.93f, -5.86f), 30, new Color(.78f, .53f, .25f), Quaternion.Euler(0f, 180f, 0f));
+            BuildStationInterior(step, center);
         }
 
-        private void BuildStationInterior(string step)
+        private void BuildStationInterior(string step, Vector3 center)
         {
-            Box("SheriffDesk", new Vector3(1.0f, .85f, 34.2f), new Vector3(2.4f, 1.55f, 1.0f), darkWood);
-            Box("StationMap", new Vector3(-2.0f, 1.65f, 34.6f), new Vector3(2.1f, .04f, 1.15f), paper, false)
+            Box("SheriffDesk", StationPoint(center, 1.0f, .85f, -2.05f), new Vector3(2.4f, 1.55f, 1.0f), darkWood);
+            Box("StationMap", StationPoint(center, -2.0f, 1.65f, -1.65f), new Vector3(2.1f, .04f, 1.15f), paper, false)
                 .transform.Rotate(0f, 5f, 0f);
-            Text("MINE  /  BARN", new Vector3(-2.0f, 1.69f, 34.6f), 13, new Color(.24f, .08f, .04f), Quaternion.Euler(90f, 0f, 0f));
+            Text("MINE  /  BARN", StationPoint(center, -2.0f, 1.69f, -1.65f), 13, new Color(.24f, .08f, .04f), Quaternion.Euler(90f, 0f, 0f));
             for (var i = 0; i < 4; i++)
-                Box("CellBar", new Vector3(-3.8f + i * .75f, 1.2f, 36.8f), new Vector3(.12f, 2.4f, .12f), rust, false);
-            Box("CellBack", new Vector3(-2.7f, 1.25f, 38.4f), new Vector3(2.8f, 2.5f, .18f), darkWood, false);
-            Box("KeyBoard", new Vector3(3.5f, 1.8f, 34.0f), new Vector3(1.3f, 1.8f, .12f), wood, false);
+                Box("CellBar", StationPoint(center, -3.8f + i * .75f, 1.2f, .55f), new Vector3(.12f, 2.4f, .12f), rust, false);
+            Box("CellBack", StationPoint(center, -2.7f, 1.25f, 2.15f), new Vector3(2.8f, 2.5f, .18f), darkWood, false);
+            Box("KeyBoard", StationPoint(center, 3.5f, 1.8f, -2.25f), new Vector3(1.3f, 1.8f, .12f), wood, false);
             for (var i = 0; i < 5; i++)
-                Box("MissingKeyHook", new Vector3(3.1f + i * .22f, 1.3f + (i % 2) * .45f, 33.9f), new Vector3(.05f, .24f, .05f), rust, false);
-            Box("LaylaScarf", new Vector3(1.05f, 1.68f, 34.1f), new Vector3(.65f, .035f, .22f), cloth, false)
+                Box("MissingKeyHook", StationPoint(center, 3.1f + i * .22f, 1.3f + (i % 2) * .45f, -2.35f), new Vector3(.05f, .24f, .05f), rust, false);
+            Box("LaylaScarf", StationPoint(center, 1.05f, 1.68f, -2.15f), new Vector3(.65f, .035f, .22f), cloth, false)
                 .transform.Rotate(0f, 18f, 0f);
-            Box("UpperDeskStation", new Vector3(.2f, 4.0f, 38.15f), new Vector3(1.8f, .12f, .8f), wood, false);
-            Box("RedLedger", new Vector3(.2f, 4.16f, 38.15f), new Vector3(.75f, .09f, .52f), Tint(wood, "LedgerRed", new Color(.32f, .045f, .025f)), false);
-            Box("TunnelMap", new Vector3(2.0f, 4.16f, 38.2f), new Vector3(1.1f, .035f, .75f), paper, false);
-            Text("MINE\nSHAFT", new Vector3(2.0f, 4.19f, 38.2f), 12, new Color(.24f, .08f, .04f), Quaternion.Euler(90f, 0f, 0f));
+            Box("UpperDeskStation", StationPoint(center, .2f, 4.0f, 1.9f), new Vector3(1.8f, .12f, .8f), wood, false);
+            Box("RedLedger", StationPoint(center, .2f, 4.16f, 1.9f), new Vector3(.75f, .09f, .52f), Tint(wood, "LedgerRed", new Color(.32f, .045f, .025f)), false);
+            Box("TunnelMap", StationPoint(center, 2.0f, 4.16f, 1.95f), new Vector3(1.1f, .035f, .75f), paper, false);
+            Text("MINE\nSHAFT", StationPoint(center, 2.0f, 4.19f, 1.95f), 12, new Color(.24f, .08f, .04f), Quaternion.Euler(90f, 0f, 0f));
             if (step is "station_hale" or "station_key")
             {
-                Part("SheriffHale", PrimitiveType.Capsule, root, new Vector3(2.4f, 1.65f, 37.0f), new Vector3(.52f, 1.35f, .52f), leather, Quaternion.identity, false);
-                Part("SheriffHaleHead", PrimitiveType.Sphere, root, new Vector3(2.4f, 3.12f, 37.0f), new Vector3(.42f, .42f, .42f), paper, Quaternion.identity, false);
+                Part("SheriffHale", PrimitiveType.Capsule, root, StationPoint(center, 2.4f, 1.65f, .75f), new Vector3(.52f, 1.35f, .52f), leather, Quaternion.identity, false);
+                Part("SheriffHaleHead", PrimitiveType.Sphere, root, StationPoint(center, 2.4f, 3.12f, .75f), new Vector3(.42f, .42f, .42f), paper, Quaternion.identity, false);
             }
         }
 
@@ -955,6 +963,9 @@ namespace ForgottenTrail
             mesh.alignment = TextAlignment.Center;
             mesh.color = color;
         }
+
+        private static Vector3 StationPoint(Vector3 center, float x, float y, float z)
+            => center + new Vector3(x, y, z);
 
         private GameObject Box(string name, Vector3 position, Vector3 scale, Material material, bool collision = true)
             => Part(name, PrimitiveType.Cube, root, position, scale, material, Quaternion.identity, collision);

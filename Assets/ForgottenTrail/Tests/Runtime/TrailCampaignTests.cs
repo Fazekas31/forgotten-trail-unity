@@ -116,7 +116,8 @@ namespace ForgottenTrail.Tests
         {
             Assert.That(TrailArrivalLayout.IsChurchStep("priest"), Is.True);
             Assert.That(TrailArrivalLayout.IsStationStep("station_ledger"), Is.True);
-            Assert.That(TrailArrivalLayout.SpawnFor("enter_church", Vector3.zero).z, Is.LessThan(TrailArrivalLayout.SpawnFor("station", Vector3.zero).z));
+            Assert.That(TrailArrivalLayout.SpawnFor("station", Vector3.zero).x, Is.GreaterThan(TrailArrivalLayout.SpawnFor("enter_church", Vector3.zero).x));
+            Assert.That(TrailArrivalLayout.SpawnFor("station", Vector3.zero).x, Is.GreaterThan(12f));
             Assert.That(TrailArrivalLayout.TargetFor("station_ledger", Vector3.zero).y, Is.GreaterThan(3.5f));
         }
 
@@ -195,6 +196,49 @@ namespace ForgottenTrail.Tests
             Assert.That(stationFoundation.position.x, Is.EqualTo(0f).Within(.01f));
             Assert.That(stationFoundation.position.y, Is.EqualTo(.16f).Within(.01f));
             Assert.That(stationFoundation.position.z, Is.EqualTo(36.25f).Within(.01f));
+            Object.DestroyImmediate(instance);
+        }
+
+        [Test]
+        public void AuthoredBackdropPivotsPreserveTheReferenceStreetLayout()
+        {
+            var prefab = Resources.Load<GameObject>("Environment/AshCreek_Architecture");
+            Assert.That(prefab, Is.Not.Null);
+
+            var instance = Object.Instantiate(prefab);
+            instance.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            instance.transform.localScale = new Vector3(-1f, 1f, 1f);
+            foreach (Transform child in instance.transform)
+                child.localRotation = child.name.EndsWith("_Pivot")
+                    ? Quaternion.identity
+                    : Quaternion.Euler(-90f, 0f, 0f) * child.localRotation;
+            TrailArrivalLayout.ApplyAuthoredArchitectureLayout(instance.transform);
+
+            var expected = new Dictionary<string, Vector3>
+            {
+                ["ARCH_BoardingHouse_Pivot"] = new Vector3(-16f, 0f, 7.5f),
+                ["ARCH_Mercantile_Pivot"] = new Vector3(16f, 0f, 11f),
+                ["ARCH_Blacksmith_Pivot"] = new Vector3(-16f, 0f, 26f),
+                ["ARCH_DoctorHouse_Pivot"] = new Vector3(16f, 0f, 32.5f),
+                ["ARCH_NorthCabin_Pivot"] = new Vector3(-13.5f, 0f, 43f),
+                ["ARCH_EastCabin_Pivot"] = new Vector3(14f, 0f, 43f)
+            };
+
+            foreach (var pair in expected)
+            {
+                var pivot = FindChild(instance.transform, pair.Key);
+                Assert.That(pivot, Is.Not.Null, pair.Key + " is missing");
+                Assert.That(pivot.position.x, Is.EqualTo(pair.Value.x).Within(.6f), pair.Key + " x");
+                Assert.That(pivot.position.y, Is.EqualTo(pair.Value.y).Within(.2f), pair.Key + " y");
+                Assert.That(pivot.position.z, Is.EqualTo(pair.Value.z).Within(.6f), pair.Key + " z");
+            }
+
+            var stationFoundation = FindChild(instance.transform, "ARCH_Station_Foundation");
+            Assert.That(stationFoundation, Is.Not.Null);
+            Assert.That(stationFoundation.position.x, Is.EqualTo(16.5f).Within(.6f));
+            Assert.That(stationFoundation.position.z, Is.EqualTo(22f).Within(.6f));
+            Assert.That(FindChild(instance.transform, "ARCH_Station_LayoutAnchor"), Is.Not.Null);
+
             Object.DestroyImmediate(instance);
         }
 

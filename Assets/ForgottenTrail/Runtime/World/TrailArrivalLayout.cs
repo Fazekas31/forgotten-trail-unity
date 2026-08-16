@@ -11,6 +11,74 @@ namespace ForgottenTrail
     {
         public const float GroundAnchorY = .05f;
 
+        // These are world-space landmarks for the authored town composition.
+        // Keeping them in one contract prevents the imported GLB, procedural
+        // gameplay props and narrative targets from drifting apart.
+        public static readonly Vector3 StationCenter = new Vector3(16.5f, 0f, 22f);
+
+        public static readonly Dictionary<string, Vector3> AuthoredArchitecturePositions = new()
+        {
+            ["ARCH_Saloon"] = new Vector3(-7.6f, .16f, 11.75f),
+            ["ARCH_Church"] = new Vector3(7f, .16f, 27.5f),
+            ["ARCH_Station"] = new Vector3(16.5f, .16f, 22f),
+            ["ARCH_BoardingHouse_Pivot"] = new Vector3(-16f, 0f, 7.5f),
+            ["ARCH_Mercantile_Pivot"] = new Vector3(16f, 0f, 11f),
+            ["ARCH_Blacksmith_Pivot"] = new Vector3(-16f, 0f, 26f),
+            ["ARCH_DoctorHouse_Pivot"] = new Vector3(16f, 0f, 32.5f),
+            ["ARCH_NorthCabin_Pivot"] = new Vector3(-13.5f, 0f, 43f),
+            ["ARCH_EastCabin_Pivot"] = new Vector3(14f, 0f, 43f)
+        };
+
+        /// <summary>
+        /// Applies the reference street composition after the GLB axis
+        /// conversion. Backdrop houses already have authored pivots; the
+        /// three playable landmarks are direct mesh siblings and therefore
+        /// need a shared anchor to keep their walls and roofs together.
+        /// </summary>
+        public static void ApplyAuthoredArchitectureLayout(Transform architecture)
+        {
+            if (architecture == null) return;
+
+            var pivotNames = new[]
+            {
+                "ARCH_BoardingHouse_Pivot", "ARCH_Mercantile_Pivot", "ARCH_Blacksmith_Pivot",
+                "ARCH_DoctorHouse_Pivot", "ARCH_NorthCabin_Pivot", "ARCH_EastCabin_Pivot"
+            };
+            foreach (var pivotName in pivotNames)
+            {
+                var pivot = FindChild(architecture, pivotName);
+                if (pivot != null) pivot.position = AuthoredArchitecturePositions[pivotName];
+            }
+
+            LayoutDirectBuilding(architecture, "ARCH_Saloon", AuthoredArchitecturePositions["ARCH_Saloon"]);
+            LayoutDirectBuilding(architecture, "ARCH_Church", AuthoredArchitecturePositions["ARCH_Church"]);
+            LayoutDirectBuilding(architecture, "ARCH_Station", AuthoredArchitecturePositions["ARCH_Station"]);
+        }
+
+        private static void LayoutDirectBuilding(Transform architecture, string prefix, Vector3 target)
+        {
+            var parts = new List<Transform>();
+            foreach (Transform child in architecture)
+                if (child.name.StartsWith(prefix + "_")) parts.Add(child);
+
+            if (parts.Count == 0) return;
+
+            var anchorObject = new GameObject(prefix + "_LayoutAnchor");
+            var anchor = anchorObject.transform;
+            anchor.SetParent(architecture, true);
+            var foundation = parts.Find(part => part.name == prefix + "_Foundation");
+            anchor.position = foundation != null ? foundation.position : parts[0].position;
+            foreach (var part in parts) part.SetParent(anchor, true);
+            anchor.position = target;
+        }
+
+        private static Transform FindChild(Transform root, string name)
+        {
+            foreach (var child in root.GetComponentsInChildren<Transform>(true))
+                if (child.name == name) return child;
+            return null;
+        }
+
         private static readonly Dictionary<string, Vector3> SpawnPoints = new()
         {
             ["arrival"] = new Vector3(0f, .05f, -16f),
@@ -29,11 +97,11 @@ namespace ForgottenTrail
             ["enter_church"] = new Vector3(6.3f, .05f, 22.0f),
             ["church_interior"] = new Vector3(6.3f, .05f, 28.2f),
             ["priest"] = new Vector3(6.3f, .05f, 29.8f),
-            ["station"] = new Vector3(.2f, .05f, 35.0f),
-            ["station_ledger"] = new Vector3(.2f, 3.48f, 38.2f),
-            ["station_hale"] = new Vector3(2.4f, .05f, 36.0f),
-            ["station_key"] = new Vector3(2.4f, .05f, 36.0f),
-            ["leave_station"] = new Vector3(.2f, .05f, 31.0f),
+            ["station"] = new Vector3(16.5f, .05f, 16.5f),
+            ["station_ledger"] = new Vector3(16.7f, 3.48f, 23.9f),
+            ["station_hale"] = new Vector3(18.9f, .05f, 22.75f),
+            ["station_key"] = new Vector3(18.9f, .05f, 22.75f),
+            ["leave_station"] = new Vector3(16.5f, .05f, 16.5f),
             ["return_church"] = new Vector3(6.3f, .05f, 21.0f),
             ["barn"] = new Vector3(0f, .05f, 47.0f)
         };
@@ -56,11 +124,11 @@ namespace ForgottenTrail
             ["enter_church"] = new Vector3(6.3f, 1.05f, 21.1f),
             ["church_interior"] = new Vector3(6.3f, 1.05f, 28.0f),
             ["priest"] = new Vector3(6.3f, 1.45f, 30.0f),
-            ["station"] = new Vector3(.2f, 1.05f, 31.05f),
-            ["station_ledger"] = new Vector3(.2f, 4.02f, 38.15f),
-            ["station_hale"] = new Vector3(2.35f, 1.2f, 36.0f),
-            ["station_key"] = new Vector3(2.35f, 1.2f, 36.0f),
-            ["leave_station"] = new Vector3(.2f, 1.05f, 31.05f),
+            ["station"] = new Vector3(16.5f, 1.05f, 16.2f),
+            ["station_ledger"] = new Vector3(16.7f, 4.02f, 23.9f),
+            ["station_hale"] = new Vector3(18.9f, 1.2f, 22.75f),
+            ["station_key"] = new Vector3(18.9f, 1.2f, 22.75f),
+            ["leave_station"] = new Vector3(16.5f, 1.05f, 16.2f),
             ["return_church"] = new Vector3(6.3f, 1.05f, 21.1f),
             ["barn"] = new Vector3(0f, 1.0f, 46.0f)
         };
